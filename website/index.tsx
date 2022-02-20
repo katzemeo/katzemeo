@@ -69,15 +69,6 @@ async function handleRequest(request: Request): Promise<Response> {
   }
 
   try {
-    /*
-    const shellenv: any = Deno.env.toObject();
-    let apiURL = "http://localhost:8000/api";
-
-    if (shellenv.API_URL) {
-      apiURL = shellenv.API_URL;
-    }
-    */
-
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
   } catch (error) {
     console.log(`Unable to process request - ${error}`);
