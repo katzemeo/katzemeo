@@ -20,11 +20,11 @@ const POOL_OPTIONS:any = {
   user: env.DB_USER,
 };
 
-// Configure SSL connection if DB cert is specified (otherwise both ports 0 and DB_PORT must be allowed)
+// Configure TLS/SSL connection if DB cert is specified (otherwise both ports 0 and DB_PORT must be allowed)
 if (env.DB_CERT_FILE || env.DB_CERT) {
   let cert = env.DB_CERT;
   if (env.DB_CERT_FILE) {
-    console.debug(`Enabling DB cert: ${env.DB_CERT_FILE}`);
+    console.debug(`Loading DB cert: ${env.DB_CERT_FILE}`);
     cert = await Deno.readTextFile(
       new URL(env.DB_CERT_FILE, import.meta.url),
     );
@@ -54,6 +54,12 @@ serve(async (req) => {
   const url = new URL(req.url);
   if (url.pathname !== "/todos") {
     return new Response("Not Found", { status: 404 });
+  }
+
+  // Check API key (if configured)
+  const apiKey = req.headers.get("X-API-KEY");
+  if (env.API_KEY && apiKey !== env.API_KEY) {
+    return new Response("Invalid/Missing X-API-KEY Header", { status: 401 });
   }
 
   const connection = await pool.connect();
