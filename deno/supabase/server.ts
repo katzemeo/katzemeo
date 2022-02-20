@@ -1,6 +1,6 @@
-import { serve } from "https://deno.land/std@0.114.0/http/server.ts";
-import * as postgres from "https://deno.land/x/postgres@v0.14.2/mod.ts";
 import { loadEnv } from "./env.ts";
+import { postgres } from "./deps.ts";
+import { serve } from "./deps.ts";
 
 const env: any = await loadEnv();
 
@@ -24,7 +24,7 @@ const POOL_OPTIONS:any = {
 if (env.DB_CERT_FILE || env.DB_CERT) {
   let cert = env.DB_CERT;
   if (env.DB_CERT_FILE) {
-    console.log(`Enabling DB cert: ${env.DB_CERT_FILE}`);
+    console.debug(`Enabling DB cert: ${env.DB_CERT_FILE}`);
     cert = await Deno.readTextFile(
       new URL(env.DB_CERT_FILE, import.meta.url),
     );
@@ -36,7 +36,7 @@ if (env.DB_CERT_FILE || env.DB_CERT) {
   };
 }
 
-console.log("Creating to DB pool...");
+console.debug("Creating to DB pool...");
 const pool = new postgres.Pool(POOL_OPTIONS, POOL_CONNECTIONS);
 const connection = await pool.connect();
 try {

@@ -1,2 +1,3 @@
 deno/supabase/.env.local
 deno/supabase/README.md.local
+deno/supabase/prod-ca-2021.crt
