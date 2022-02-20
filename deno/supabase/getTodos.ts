@@ -1,4 +1,4 @@
-// Update URL as appropriate
+// Update URL and API as appropriate
 //const API_URL = "http://localhost:8000/todos";
 const API_URL = "https://katzemeo.deno.dev/todos";
 const API_KEY = "";

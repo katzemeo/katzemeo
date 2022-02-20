@@ -36,7 +36,7 @@ if (env.DB_CERT_FILE || env.DB_CERT) {
   };
 }
 
-console.debug("Creating to DB pool...");
+console.debug("Creating to DB pool and preparing schema...");
 const pool = new postgres.Pool(POOL_OPTIONS, POOL_CONNECTIONS);
 const connection = await pool.connect();
 try {
@@ -44,7 +44,14 @@ try {
     CREATE TABLE IF NOT EXISTS todos (
       id SERIAL PRIMARY KEY,
       title TEXT NOT NULL
-    )
+    );
+    DROP TABLE symbol;
+    CREATE TABLE IF NOT EXISTS symbol (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(5) NOT NULL,
+      market VARCHAR(5) DEFAULT 'CAD',
+      last_price VARCHAR(5)
+    );
   `;
 } finally {
   connection.release();
