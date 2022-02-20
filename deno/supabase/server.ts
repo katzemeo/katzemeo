@@ -12,22 +12,32 @@ const env: any = await loadEnv();
 
 // Create a database pool and specify CA cert for TLS connection
 const POOL_CONNECTIONS = 3;
-const pool = new postgres.Pool({
+const POOL_OPTIONS:any = {
   database: env.DB_NAME,
   hostname: env.DB_HOST,
   password: env.DB_PASSWORD,
   port: env.DB_PORT,
   user: env.DB_USER,
-  tls: {
-    caCertificates: [
-      await Deno.readTextFile(
-        new URL("./prod-ca-2021.crt", import.meta.url),
-      ),
-    ],
-    enabled: false,
-  },
-}, POOL_CONNECTIONS);
+};
 
+// Configure SSL connection if DB cert is specified (otherwise both ports 0 and DB_PORT must be allowed)
+if (env.DB_CERT_FILE || env.DB_CERT) {
+  let cert = env.DB_CERT;
+  if (env.DB_CERT_FILE) {
+    console.log(`Enabling DB cert: ${env.DB_CERT_FILE}`);
+    cert = await Deno.readTextFile(
+      new URL(env.DB_CERT_FILE, import.meta.url),
+    );
+  }
+
+  POOL_OPTIONS.tls = {
+    caCertificates: [ cert ],
+    enabled: false,
+  };
+}
+
+console.log("Creating to DB pool...");
+const pool = new postgres.Pool(POOL_OPTIONS, POOL_CONNECTIONS);
 const connection = await pool.connect();
 try {
   await connection.queryObject`

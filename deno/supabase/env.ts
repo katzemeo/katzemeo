@@ -37,7 +37,11 @@ export async function loadEnv() {
     env['DB_PORT'] = shellenv.DB_PORT;
   }
 
-  //console.log(env);
+  if (shellenv.DB_CERT) {
+    env['DB_CERT'] = shellenv.DB_CERT;
+  }
+
+  console.log(env);
 
   //console.log(shellenv);
   // e.g. with Deno Deploy (along w/ any defined environment variables)
