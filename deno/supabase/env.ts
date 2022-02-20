@@ -41,7 +41,7 @@ export async function loadEnv() {
     env['DB_CERT'] = shellenv.DB_CERT;
   }
 
-  console.log(env);
+  //console.log(env);
 
   //console.log(shellenv);
   // e.g. with Deno Deploy (along w/ any defined environment variables)

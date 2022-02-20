@@ -1,5 +1,6 @@
 // Update URL as appropriate
-const API_URL = "http://localhost:8000/todos";
+//const API_URL = "http://localhost:8000/todos";
+const API_URL = "https://katzemeo.deno.dev/todos";
 
 function getHeaders() {
   /*const b64: string = base64.fromUint8Array(
