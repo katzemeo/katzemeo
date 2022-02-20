@@ -1,13 +1,11 @@
 // Update URL as appropriate
 //const API_URL = "http://localhost:8000/todos";
 const API_URL = "https://katzemeo.deno.dev/todos";
+const API_KEY = "";
 
 function getHeaders() {
-  /*const b64: string = base64.fromUint8Array(
-    new TextEncoder().encode(`${API_USER}:${API_PASSWORD}`),
-  );*/
   const headers = new Headers({
-    //"Authorization": `Basic ${b64}`,
+    "X-API-KEY": API_KEY,
     "Accept": "application/json",
     "Content-Type": "application/json",
   });
@@ -16,7 +14,7 @@ function getHeaders() {
 
 const getTodos = async () => {
   let res = await fetch(API_URL, {
-    //headers: getHeaders(),
+    headers: getHeaders(),
   });
   if (res.status == 200) {
     const contentType = res.headers.get("content-type");

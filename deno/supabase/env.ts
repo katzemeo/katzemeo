@@ -41,6 +41,10 @@ export async function loadEnv() {
     env['DB_CERT'] = shellenv.DB_CERT;
   }
 
+  if (shellenv.API_KEY) {
+    env['API_KEY'] = shellenv.API_KEY;
+  }
+
   //console.log(env);
 
   //console.log(shellenv);
