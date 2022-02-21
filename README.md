@@ -2,6 +2,7 @@
 
 - 🔭 I’m currently working on my website http://katzemeo.deno.dev
 - 🌱 Learning deno to build and deploy an investment related app named Silvester
+- 🌱 Leveraging Alpha Vantage API to research the stock market
 - 📫 Follow me on Twitter @katzemeo
 
 <!--
@@ -17,4 +18,6 @@ Here are some ideas to get you started:
 
 ## Run from terminal
 ### http://localhost:8000/
+```
 deno run --allow-net=:8000 --allow-env --allow-read --watch --config tsconfig.json index.tsx
+```

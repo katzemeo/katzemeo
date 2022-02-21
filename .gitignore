@@ -1,3 +1,4 @@
 deno/supabase/.env.local
 deno/supabase/README.md.local
 deno/supabase/prod-ca-2021.crt
+deno/alphavantage/.env.local
