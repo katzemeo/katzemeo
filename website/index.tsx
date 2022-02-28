@@ -66,6 +66,14 @@ async function handleRequest(request: Request): Promise<Response> {
         "content-type": "text/css",
       },
     });
+  } else if (pathname.startsWith("/dnf4life.")) {
+    console.log(`${pathname}`);
+    const file = await Deno.readFile("."+ pathname);
+    return new Response(file, {
+      headers: {
+        "Cache-Control": "public, max-age=31536000",
+      },
+    });
   }
 
   try {
