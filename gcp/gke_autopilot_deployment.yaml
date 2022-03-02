@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: katzemeo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: katzemeo
+  template:
+    metadata:
+      labels:
+        app: katzemeo
+    spec:
+      containers:
+      - name: katzemeo
+        image: us-east4-docker.pkg.dev/my-project/my-repo/katzemeo:latest
+        ports:
+        - containerPort: 4000
+        readinessProbe:
+          httpGet:
+            path: "/ping"
+            port: 4000
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: "/ping"
+            port: 4000
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        env:
+        - name: PORT
+          value: 4000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+            ephemeral-storage: 1Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+            ephemeral-storage: 1Mi

@@ -14,6 +14,8 @@ https://github.com/katzemeo/katzemeo/blob/main/server.ts
 
 ## Run from terminal (server)
 ```
+cd deno/supabase
+
 Setup local .env file and start the server
 - set ENV_PATH=.env.local OR $env:ENV_PATH=".env.local"
 - echo %ENV_PATH% or dir env: or $env:ENV_PATH
@@ -27,6 +29,8 @@ OR
 ## Run from terminal (client)
 Run the client to access the server
 ```
+cd deno/supabase
+
 - deno run --allow-net=:8000 --allow-env --allow-read --watch getTodos.ts
 OR
 - deno run --allow-net=katzemeo.deno.dev:80 --allow-env --allow-read --watch getTodos.ts

@@ -41,17 +41,42 @@ const pool = new postgres.Pool(POOL_OPTIONS, POOL_CONNECTIONS);
 const connection = await pool.connect();
 try {
   await connection.queryObject`
+    --DROP TABLE todos;
     CREATE TABLE IF NOT EXISTS todos (
       id SERIAL PRIMARY KEY,
       title TEXT NOT NULL
     );
-    DROP TABLE symbol;
+
+    --DROP TABLE IF EXISTS symbol_overview;
+    --DROP TABLE IF EXISTS symbol_daily;
+    --DROP TABLE IF EXISTS symbol;
+
     CREATE TABLE IF NOT EXISTS symbol (
       id SERIAL PRIMARY KEY,
-      name VARCHAR(5) NOT NULL,
-      market VARCHAR(5) DEFAULT 'CAD',
-      last_price VARCHAR(5)
+      code VARCHAR(10) NOT NULL UNIQUE,
+      currency VARCHAR(3) NOT NULL,
+      exchange VARCHAR(6) NOT NULL,
+      last_price NUMERIC(12, 4),
+      last_volume NUMERIC,
+      last_date TIMESTAMPTZ,
+      prev_close NUMERIC(12, 4),
+      quote_date TIMESTAMPTZ,
+      action VARCHAR(6),
+      note VARCHAR(255)
     );
+
+    CREATE TABLE IF NOT EXISTS symbol_daily (
+      id SERIAL PRIMARY KEY,
+      symbol_id INTEGER REFERENCES symbol(id) NOT NULL,
+      date TIMESTAMPTZ NOT NULL,
+      open NUMERIC(12, 4) NOT NULL,
+      high NUMERIC(12, 4) NOT NULL,
+      low NUMERIC(12, 4) NOT NULL,
+      close NUMERIC(12, 4) NOT NULL,
+      volume INTEGER NOT NULL
+    );
+    
+    CREATE INDEX IF NOT EXISTS symbol_daily_date_idx ON symbol_daily (symbol_id, date);
   `;
 } finally {
   connection.release();

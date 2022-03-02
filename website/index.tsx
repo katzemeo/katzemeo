@@ -77,6 +77,10 @@ async function handleRequest(request: Request): Promise<Response> {
   }
 
   try {
+    if (pathname == "/ping") {
+      return new Response(`OK`);
+    }
+
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
   } catch (error) {
     console.log(`Unable to process request - ${error}`);
@@ -87,6 +91,7 @@ async function handleRequest(request: Request): Promise<Response> {
   }
 }
 
-const addr = ':8000';
+const PORT = Deno.env.get("PORT") ?? "8000";
+const addr = `:${PORT}`;
 console.log(`Listening on http://localhost${addr}`);
 await serve(handleRequest, { addr });

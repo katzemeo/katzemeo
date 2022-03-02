@@ -1,0 +1,36 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: managed-cert
+spec:
+  domains:
+    - cat.npsolve.com
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: katzemeo-np
+spec:
+  selector:
+    app: katzemeo
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: katzemeo-ingress
+  annotations:
+#    kubernetes.io/ingress.global-static-ip-name: my-static-address
+    networking.gke.io/managed-certificates: managed-cert
+    kubernetes.io/ingress.class: "gce"
+#    kubernetes.io/ingress.allow-http: "false"
+spec:
+  defaultBackend:
+    service:
+      name: katzemeo-np
+      port:
+        number: 80
