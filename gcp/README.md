@@ -4,9 +4,9 @@
 
 ### Clone latest repo (renew personal access token if needed)
 ```
-cd silvester
 git clone https://katzemeo@github.com/katzemeo/katzemeo.git
 curl -u username:token https://api.github.com/user
+cd katzemeo
 ```
 
 ### Confirm current project is correct and setup your repo if needed

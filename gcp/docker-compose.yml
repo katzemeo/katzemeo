@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  silvester:
+    container_name: katzemeo-website
+    image: 'npsolve/katzemeo:latest'
+    environment:
+      - PORT=4000
+    ports:
+      - '80:4000'
+      - '443:4000'
