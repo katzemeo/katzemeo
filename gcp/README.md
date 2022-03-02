@@ -24,7 +24,9 @@ gcloud artifacts repositories list
 
 ### Build and tag docker image to registry
 ```
-gcloud builds submit --tag us-east4-docker.pkg.dev/my-project/my-repo/katzemeo:latest
+gcloud builds submit --tag us-east4-docker.pkg.dev/my-project/my-repo/katzemeo:latest ./gcp/Dockerfile
+OR
+gcloud builds submit
 ```
 
 ### Confirm login (if needed) and set context for kubectl access
@@ -48,6 +50,7 @@ kubectl create namespace katzemeo
 
 ### Customize resources (env variables, secrets etc.) in clone from Git repo
 ```
+cd gcp
 kubectl apply -f ./gke_autopilot_https.yaml -n katzemeo
 -- managedcertificate.networking.gke.io/managed-cert configured
 -- service/katzemeo-np created

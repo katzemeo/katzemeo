@@ -1,0 +1,10 @@
+steps:
+- name: "gcr.io/cloud-builders/docker"
+  args:
+  - build
+  - "--tag=us-east4-docker.pkg.dev/silvester-1/npsolve-repo/katzemeo:latest"
+  - "--file=./gcp/Dockerfile"
+  - .
+
+images:
+- "us-east4-docker.pkg.dev/silvester-1/npsolve-repo/katzemeo:latest"

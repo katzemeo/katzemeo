@@ -1,7 +1,7 @@
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate
 metadata:
-  name: managed-cert
+  name: cat-managed-cert
 spec:
   domains:
     - cat.npsolve.com
@@ -25,7 +25,7 @@ metadata:
   name: katzemeo-ingress
   annotations:
 #    kubernetes.io/ingress.global-static-ip-name: my-static-address
-    networking.gke.io/managed-certificates: managed-cert
+    networking.gke.io/managed-certificates: cat-managed-cert
     kubernetes.io/ingress.class: "gce"
 #    kubernetes.io/ingress.allow-http: "false"
 spec:
