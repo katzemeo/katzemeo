@@ -26,6 +26,7 @@ gcloud artifacts repositories list
 ```
 gcloud builds submit --tag us-east4-docker.pkg.dev/my-project/my-repo/katzemeo:latest ./gcp/Dockerfile
 OR
+cp gcp/cloudbuild.yaml .
 gcloud builds submit
 ```
 

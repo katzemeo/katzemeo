@@ -50,16 +50,16 @@ const html = `
 async function handleRequest(request: Request): Promise<Response> {
   const { pathname } = new URL(request.url);
 
-  if (pathname.startsWith("/favicon.ico")) {
-    console.log(`${pathname}`);
-    const file = await Deno.readFile("./favicon.ico");
+  if (pathname.startsWith("/favicon.")) {
+    //console.debug(`${pathname}`);
+    const file = await Deno.readFile("."+ pathname);
     return new Response(file, {
       headers: {
         "Cache-Control": "public, max-age=31536000",
       },
     });
   } else if (pathname.startsWith("/style.css")) {
-    console.log(`${pathname}`);
+    //console.debug(`${pathname}`);
     const file = await Deno.readFile("./style.css");
     return new Response(file, {
       headers: {
@@ -67,7 +67,7 @@ async function handleRequest(request: Request): Promise<Response> {
       },
     });
   } else if (pathname.startsWith("/dnf4life.")) {
-    console.log(`${pathname}`);
+    //console.debug(`${pathname}`);
     const file = await Deno.readFile("."+ pathname);
     return new Response(file, {
       headers: {
