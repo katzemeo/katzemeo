@@ -14,6 +14,7 @@ const env = await configAsync(configOptions);
 
 // Connecting to a local Mongo Database
 const MONGO_URI = Deno.env.get("MONGO_URI") ?? env.MONGO_URI;
+const MONGO_DB = env.MONGO_DB ?? "testdb";
 
 if (!MONGO_URI && (!env.MONGO_HOST || !env.MONGO_USER || !env.MONGO_PASSWORD)) throw new Error("MONGO_URI not found");
 
@@ -41,7 +42,7 @@ let options = MONGO_URI ?? {
   credential: {
     username: env.MONGO_USER,
     password: env.MONGO_PASSWORD,
-    db: env.MONGO_DB ?? "Cluster0",
+    db: MONGO_DB,
     mechanism: env.MONGO_AUTH ?? "SCRAM-SHA-1",
   },
 };
@@ -60,7 +61,7 @@ interface Symbol {
   name: string;
 }
 
-const collection = client.database().collection<Symbol>("symbols");
+const collection = client.database(MONGO_DB).collection<Symbol>("symbols");
 
 const getSymbols = async () => {
   try {
