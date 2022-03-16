@@ -30,7 +30,7 @@ const getExchangeRate = async (fromCurrency: string, toCurrency: string = "CAD")
       data = await res.json();
       return data;
     } else {
-      console.log("Unexpected ", contentType);
+      console.log("Unexpected", contentType);
       return null;
     }
   } else {
@@ -58,7 +58,7 @@ const getDailySeries = async (symbol: string) => {
       data = await res.json();
       return data;
     } else {
-      console.log("Unexpected ", contentType);
+      console.log("Unexpected", contentType);
       return null;
     }
   } else {

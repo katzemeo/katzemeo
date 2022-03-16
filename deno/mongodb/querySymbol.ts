@@ -16,7 +16,8 @@ const env = await configAsync(configOptions);
 const MONGO_URI = Deno.env.get("MONGO_URI") ?? env.MONGO_URI;
 const MONGO_DB = env.MONGO_DB ?? "testdb";
 
-if (!MONGO_URI && (!env.MONGO_HOST || !env.MONGO_USER || !env.MONGO_PASSWORD)) throw new Error("MONGO_URI not found");
+if (!MONGO_URI && (!env.MONGO_HOST || !env.MONGO_USER || !env.MONGO_PASSWORD))
+  throw new Error("MONGO_URI not found");
 
 const deploymentTime = Date.now();
 const client = new MongoClient();
@@ -85,7 +86,7 @@ const findByCode = async (code: string) => {
   try {
     return await collection.findOne({ code: code });
   } catch (err) {
-    console.error("Error on insert", Date.now() - deploymentTime, err);
+    console.error("Error on findOne", Date.now() - deploymentTime, err);
     throw err;
   }
 }
@@ -94,7 +95,7 @@ const createSymbol = async (symbol: Symbol) => {
   try {
     await collection.insertOne(symbol);
   } catch (err) {
-    console.error("Error on insert", Date.now() - deploymentTime, err);
+    console.error("Error on insertOne", Date.now() - deploymentTime, err);
     throw err;
   }
 }

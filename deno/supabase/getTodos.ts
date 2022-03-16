@@ -23,7 +23,7 @@ const getTodos = async () => {
       data = await res.json();
       return data;
     } else {
-      console.log("Unexpected ", contentType);
+      console.log("Unexpected", contentType);
       return null;
     }
   } else {
@@ -49,7 +49,7 @@ const createTodo = async (todo: any) => {
     } else if (contentType && contentType?.startsWith("text/plain")) {
       data = await res.text();
     } else {
-      console.error("Unexpected ", contentType);
+      console.error("Unexpected", contentType);
     }
     return data;
   } else {
