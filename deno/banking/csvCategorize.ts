@@ -69,11 +69,38 @@ const DESC_1_REGEX = [
   { pattern: `Regular transaction fee`, categorize: false },
   { pattern: `e-Transfer received` },
   { pattern: `e-Transfer sent`, categorize: true },
+
+  { pattern: `CASH WITHDRAWAL`, categorize: true },
+  { pattern: `DEPOSIT INTEREST`, categorize: true },
+  { pattern: `DEPOSIT`, categorize: true },
+  { pattern: `Email Trfs`, categorize: true },
+  { pattern: `INSURANCE`, credit: false, categorize: true },
+  { pattern: `INSURANCE`, credit: true, categorize: true },
+  { pattern: `INVESTMENT`, categorize: false },
+  { pattern: `MONTHLY FEE`, categorize: false },
+  { pattern: `MORTGAGE PAYMENT`, categorize: false },
+  { pattern: `MULTIPRODUCT REBATE`, categorize: false },
+  { pattern: `MUTUAL FUNDS`, categorize: true },
+  { pattern: `Payment`, categorize: true, buckets: [`WWW PAYMENT - [0-9]+ (.*)`] },
+  { pattern: `SCHEDULED PAYMENT`, categorize: true },
+  { pattern: `STAFF - PAYROLL`, categorize: true },
+  { pattern: `TAX REFUND`, categorize: true },
+  { pattern: `Transfer`, credit: false, categorize: false },
+  { pattern: `Transfer`, credit: true, categorize: false },
+  { pattern: `WWW PAYMENT - .*`, categorize: true },
+  { pattern: `WWW TRF DDA - .*`, categorize: true },
+  { pattern: `Withdrawal`, categorize: true, buckets: [`(PTB WD) --- .*`] },
 ];
 
 function prepareRegex(regexDefns: any) {
   regexDefns.forEach((rd: any) => {
     rd.regex = new RegExp(rd.pattern);
+    if (rd.buckets) {
+      rd.bucketsRegex = [];
+      rd.buckets.forEach((brd: any) => {
+        rd.bucketsRegex.push(new RegExp(brd));
+      });
+    }
   });
 }
 
@@ -83,7 +110,8 @@ function descMapToCSV(json: any) {
     if (json[key].desc2Map) {
       let desc2Map: any = json[key].desc2Map;
       for (const key2 in desc2Map) {
-        console.log(`"${key} - [${key2}]", ${desc2Map[key2].count}, ${desc2Map[key2].value.toFixed(2)}`);
+        const subcategory = key2 ? ` - [${key2}]` : "";
+        console.log(`"${key}${subcategory}", ${desc2Map[key2].count}, ${desc2Map[key2].value.toFixed(2)}`);
       }
     } else {
       console.log(`"${key}", ${json[key].count}, ${json[key].value.toFixed(2)}`);
@@ -91,14 +119,42 @@ function descMapToCSV(json: any) {
   }
 }
 
-function categorize(desc1Map: any, tx: any, key: any, value: Number) {
-  let desc2Map: any = desc1Map[key].desc2Map;
-  const key2 = tx["Description 2"];
-  if (desc2Map[key2] === undefined) {
-    desc2Map[key2] = { count: 1, value: value };
+function bucketSubCategories(bucketsRegex: any, desc2Map: any, tx: any, value: Number) {
+  let match = false;
+  let desc = tx["Description 2"].trim();
+  for (let i=0; i<bucketsRegex.length; i++) {
+    let matches = desc.match(bucketsRegex[i]);
+    if (matches && matches.length > 1) {
+      desc = matches[1];
+      match = true;
+      break;
+    }
+  }
+
+  if (!match) {
+    console.warn(desc)
+  }
+
+  if (desc2Map[desc] === undefined) {
+    desc2Map[desc] = { count: 1, value: value };
   } else {
-    desc2Map[key2].count += 1;
-    desc2Map[key2].value += value;
+    desc2Map[desc].count += 1;
+    desc2Map[desc].value += value;
+  }
+}
+
+function categorize(regexDefn: any, desc1Map: any, tx: any, key: any, value: Number) {
+  let desc2Map: any = desc1Map[key].desc2Map;
+  if (regexDefn.bucketsRegex) {
+    bucketSubCategories(regexDefn.bucketsRegex, desc2Map, tx, value);
+  } else {
+    const key2 = tx["Description 2"].trim();
+    if (desc2Map[key2] === undefined) {
+      desc2Map[key2] = { count: 1, value: value };
+    } else {
+      desc2Map[key2].count += 1;
+      desc2Map[key2].value += value;
+    }
   }
 }
 
@@ -145,6 +201,8 @@ async function categorizeFiles(args: any, files: string[], regexDefns: any) {
                 desc1Map[key] = { count: 1, credit: credit, value: value, desc2Map: rd.categorize ? {} : undefined };
               } else {
                 if (desc1Map[key].credit != credit) {
+                  console.debug(tx);
+                  console.debug(desc1Map[key]);
                   throw new Error(`Unexpected credit/debit for "${key}" with credit=${credit}!`);
                 }
 
@@ -153,7 +211,7 @@ async function categorizeFiles(args: any, files: string[], regexDefns: any) {
               }
 
               if (rd.categorize) {
-                categorize(desc1Map, tx, key, value);
+                categorize(rd, desc1Map, tx, key, value);
               } else if (rd.categorize == undefined && tx["Description 2"]) {
                 console.warn(key + ": " + tx["Description 2"]);
               }
@@ -192,14 +250,16 @@ async function categorizeFiles(args: any, files: string[], regexDefns: any) {
   }
 
   if (args.summary) {
-    console.log(`\nTOTAL DEBITS: ${CUR(TOTAL_DEBITS)} CREDITS: ${CUR(TOTAL_CREDITS)} = BALANCE: ${CUR(TOTAL_DEBITS + TOTAL_CREDITS)}\n`);
+    console.log(`\nTOTAL DEBITS: ${CUR(TOTAL_DEBITS)} CREDITS: ${CUR(TOTAL_CREDITS)} = BALANCE: ${CUR(TOTAL_DEBITS + TOTAL_CREDITS)}`);
   }
 
+  console.log();
   if (args.debug) {
     console.debug(desc1Map);
   } else {
     descMapToCSV(desc1Map);
   }
+  console.log();
 }
 
 function checkUsage(args: any) {
