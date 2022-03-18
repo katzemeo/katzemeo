@@ -93,7 +93,7 @@ Usage:
       Deno.exit(-1);
     }
 
-    if (args.debug) {
+    if (args.dump) {
       console.debug(output);
     }
     output.sort(function (a: any, b: any) {

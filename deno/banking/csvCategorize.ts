@@ -40,7 +40,7 @@ const DESC_1_REGEX = [
   { pattern: `ATM withdrawal - .*` },
   { pattern: `BR TO BR - [0-9]+`, credit: false },
   { pattern: `BR TO BR - [0-9]+`, credit: true },
-  { pattern: `Bill Payment|BILL PAYMENT`, categorize: true, buckets: [`(TELPAY BILL)P[0-9]+`] },
+  { pattern: `Bill Payment|BILL PAYMENT`, categorize: true, buckets: [`PAY-FILE FEES`, `(TELPAY BILL)P[0-9]+`] },
   { pattern: `COMMERCIAL TAXES`, categorize: true },
   { pattern: `Cash withdrawal` },
   { pattern: `(Cheque|CHEQUE) - [0-9]+` },
@@ -118,7 +118,7 @@ function prepareRegex(regexDefns: any) {
 
 function descMapToCSV(args: any, json: any, output: any = null) {
   if (!output) {
-    console.log(`"DESCRIPTION",COUNT,TOTAL` + (args.stats ? `,MEAN,STDDEV` : ""));
+    console.log(`"DESCRIPTION",COUNT,TOTAL,FROM,TO` + (args.stats ? `,MEAN,STDDEV` : ""));
   }
   for (const key in json) {
     if (json[key].desc2Map) {
@@ -134,7 +134,8 @@ function descMapToCSV(args: any, json: any, output: any = null) {
         if (output) {
           output.push(row);
         } else {
-          console.log(row.desc +", "+ row.count +", "+ row.value + (args.stats ? ", "+ row.mean +", "+ row.stddev : ""));
+          console.log(row.desc +", "+ row.count +", "+ row.value +", "+ row.from.toLocaleDateString() +", "+ row.to.toLocaleDateString() +
+            (args.stats ? ", "+ row.mean +", "+ row.stddev : ""));
         }
       }
     } else {
@@ -147,26 +148,27 @@ function descMapToCSV(args: any, json: any, output: any = null) {
       if (output) {
         output.push(row);
       } else {
-        console.log(row.desc +", "+ row.count +", "+ row.value + (args.stats ? ", "+ row.mean +", "+ row.stddev : ""));
+        console.log(row.desc +", "+ row.count +", "+ row.value +", "+ row.from.toLocaleDateString() +", "+ row.to.toLocaleDateString() +
+          (args.stats ? ", "+ row.mean +", "+ row.stddev : ""));
       }
     }
   }
 }
 
-function bucketSubCategories(args: any, bucketsRegex: any, desc2Map: any, tx: any, value: Number) {
+function bucketSubCategories(args: any, bucketsRegex: any, desc2Map: any, tx: any, key: any, value: Number) {
   let match = false;
   let desc = tx["Description 2"].trim();
   for (let i=0; i<bucketsRegex.length; i++) {
     let matches = desc.match(bucketsRegex[i]);
-    if (matches && matches.length > 1) {
-      desc = matches[1];
+    if (matches) {
+      desc = matches[matches.length - 1];
       match = true;
       break;
     }
   }
 
   if (!match) {
-    console.warn(desc)
+    console.warn(`Unknown category: "${key} - [${desc}]"`);
   }
 
   if (desc2Map[desc] === undefined) {
@@ -183,7 +185,7 @@ function bucketSubCategories(args: any, bucketsRegex: any, desc2Map: any, tx: an
 function categorize(args: any, regexDefn: any, desc1Map: any, tx: any, key: any, value: Number) {
   let desc2Map: any = desc1Map[key].desc2Map;
   if (regexDefn.bucketsRegex) {
-    bucketSubCategories(args, regexDefn.bucketsRegex, desc2Map, tx, value);
+    bucketSubCategories(args, regexDefn.bucketsRegex, desc2Map, tx, key, value);
   } else {
     const key2 = tx["Description 2"].trim();
     if (desc2Map[key2] === undefined) {
