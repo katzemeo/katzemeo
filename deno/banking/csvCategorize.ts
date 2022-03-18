@@ -2,6 +2,8 @@ import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.1
 import { parse as parseCSV } from "https://deno.land/std@0.128.0/encoding/csv.ts";
 import { StringReader } from "https://deno.land/std@0.128.0/io/readers.ts";
 import { BufReader } from "https://deno.land/std@0.128.0/io/bufio.ts";
+//import { standardDeviation as stddev } from "https://deno.land/x/simplestatistics@v7.7.5.ts";
+import { standardDeviation as stddev, mean } from "https://unpkg.com/simple-statistics@7.7.5/index.js?module";
 
 const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency" }).format;
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "America/Toronto";
@@ -114,34 +116,44 @@ function prepareRegex(regexDefns: any) {
   });
 }
 
-function descMapToCSV(json: any, output: any = null) {
+function descMapToCSV(args: any, json: any, output: any = null) {
   if (!output) {
-    console.log(`"DESCRIPTION",COUNT,TOTAL`);
+    console.log(`"DESCRIPTION",COUNT,TOTAL` + (args.stats ? `,MEAN,STDDEV` : ""));
   }
   for (const key in json) {
     if (json[key].desc2Map) {
       let desc2Map: any = json[key].desc2Map;
       for (const key2 in desc2Map) {
         const subcategory = key2 ? ` - [${key2}]` : "";
-        const row = {desc: `"${key}${subcategory}"`, from: json[key].from, to: json[key].to, count: desc2Map[key2].count, value: desc2Map[key2].value.toFixed(2)};
+        const row: any = {desc: `"${key}${subcategory}"`, from: json[key].from, to: json[key].to, count: desc2Map[key2].count, value: desc2Map[key2].value.toFixed(2)};
+        if (args.stats) {
+          row.mean = mean(desc2Map[key2].values).toFixed(2);
+          row.stddev = stddev(desc2Map[key2].values).toFixed(2);
+        }
+
         if (output) {
           output.push(row);
         } else {
-          console.log(row.desc +", "+ row.count +", "+ row.value);
+          console.log(row.desc +", "+ row.count +", "+ row.value + (args.stats ? ", "+ row.mean +", "+ row.stddev : ""));
         }
       }
     } else {
-      const row = {desc: `"${key}"`, from: json[key].from, to: json[key].to, count: json[key].count, value: json[key].value.toFixed(2)};
+      const row: any = {desc: `"${key}"`, from: json[key].from, to: json[key].to, count: json[key].count, value: json[key].value.toFixed(2)};
+      if (args.stats) {
+        row.mean = mean(json[key].values).toFixed(2);
+        row.stddev = stddev(json[key].values).toFixed(2);
+      }
+
       if (output) {
         output.push(row);
       } else {
-        console.log(row.desc +", "+ row.count +", "+ row.value);
+        console.log(row.desc +", "+ row.count +", "+ row.value + (args.stats ? ", "+ row.mean +", "+ row.stddev : ""));
       }
     }
   }
 }
 
-function bucketSubCategories(bucketsRegex: any, desc2Map: any, tx: any, value: Number) {
+function bucketSubCategories(args: any, bucketsRegex: any, desc2Map: any, tx: any, value: Number) {
   let match = false;
   let desc = tx["Description 2"].trim();
   for (let i=0; i<bucketsRegex.length; i++) {
@@ -158,29 +170,35 @@ function bucketSubCategories(bucketsRegex: any, desc2Map: any, tx: any, value: N
   }
 
   if (desc2Map[desc] === undefined) {
-    desc2Map[desc] = { count: 1, value: value };
+    desc2Map[desc] = { count: 1, value: value, values: args.stats ? [ value ] : undefined };
   } else {
     desc2Map[desc].count += 1;
     desc2Map[desc].value += value;
-  }
-}
-
-function categorize(regexDefn: any, desc1Map: any, tx: any, key: any, value: Number) {
-  let desc2Map: any = desc1Map[key].desc2Map;
-  if (regexDefn.bucketsRegex) {
-    bucketSubCategories(regexDefn.bucketsRegex, desc2Map, tx, value);
-  } else {
-    const key2 = tx["Description 2"].trim();
-    if (desc2Map[key2] === undefined) {
-      desc2Map[key2] = { count: 1, value: value };
-    } else {
-      desc2Map[key2].count += 1;
-      desc2Map[key2].value += value;
+    if (args.stats) {
+      desc2Map[desc].values.push(value);
     }
   }
 }
 
-function match(regexDefns: any, desc1Map: any, tx: any, date: Date, value: Number) {
+function categorize(args: any, regexDefn: any, desc1Map: any, tx: any, key: any, value: Number) {
+  let desc2Map: any = desc1Map[key].desc2Map;
+  if (regexDefn.bucketsRegex) {
+    bucketSubCategories(args, regexDefn.bucketsRegex, desc2Map, tx, value);
+  } else {
+    const key2 = tx["Description 2"].trim();
+    if (desc2Map[key2] === undefined) {
+      desc2Map[key2] = { count: 1, value: value, values: args.stats ? [ value ] : undefined };
+    } else {
+      desc2Map[key2].count += 1;
+      desc2Map[key2].value += value;
+      if (args.stats) {
+        desc2Map[key2].values.push(value);
+      }
+    }
+  }
+}
+
+function match(args: any, regexDefns: any, desc1Map: any, tx: any, date: Date, value: Number) {
   const credit = (value > 0);
   let matched = false;
   regexDefns.every((rd: any) => {
@@ -189,7 +207,8 @@ function match(regexDefns: any, desc1Map: any, tx: any, date: Date, value: Numbe
     if (rd.regex.test(tx["Description 1"].trim()) && (rd.credit === undefined || rd.credit === credit)) {
       matched = true;
       if (desc1Map[key] === undefined) {
-        desc1Map[key] = { count: 1, credit: credit, from: date, to: date, value: value, desc2Map: rd.categorize ? {} : undefined };
+        desc1Map[key] = { count: 1, credit: credit, from: date, to: date, value: value,
+          values: (args.stats && !rd.categorize) ? [ value ] : undefined, desc2Map: rd.categorize ? {} : undefined };
       } else {
         if (desc1Map[key].credit != credit) {
           console.debug(tx);
@@ -208,9 +227,11 @@ function match(regexDefns: any, desc1Map: any, tx: any, date: Date, value: Numbe
       }
 
       if (rd.categorize) {
-        categorize(rd, desc1Map, tx, key, value);
+        categorize(args, rd, desc1Map, tx, key, value);
       } else if (rd.categorize == undefined && tx["Description 2"]) {
         console.warn(`Unknown category: "${key}" : [${tx["Description 2"]}]`);
+      } else if (args.stats) {
+        desc1Map[key].values.push(value);
       }
 
       // break loop
@@ -288,7 +309,7 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
             throw new Error("Unexpected Zero value!");
           }
 
-          let matched = match(regexDefns, desc1Map, tx, date, value);
+          let matched = match(args, regexDefns, desc1Map, tx, date, value);
           if (!matched) {
             unmatched++;
 
@@ -358,10 +379,10 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
   if (args.debug) {
     console.debug(desc1Map);
     if (output) {
-      descMapToCSV(desc1Map, output);
+      descMapToCSV(args, desc1Map, output);
     }
   } else {
-    descMapToCSV(desc1Map, output);
+    descMapToCSV(args, desc1Map, output);
   }
 
   if (!output) {

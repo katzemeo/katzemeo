@@ -15,7 +15,7 @@ const App = () => (
       <meta name="description" content={title} />
     </Helmet>
     <div id="table">
-      <Grid rows={output} />
+      <Grid args={args} rows={output} />
     </div>
   </div>
 )
@@ -51,9 +51,9 @@ const args = parseArgs(Deno.args, {
     debug: false,
     d: ".",
     o: false,
-    sort: "value"
+    sort: "mean"
   },
-  boolean: ["o", "debug"],
+  boolean: ["o", "stats", "debug"],
   string: ["p", "f", "d", "sort"],
   alias: {
     p: "port",
@@ -101,6 +101,10 @@ Usage:
         return b.count - a.count;
       } else if (args.sort.startsWith("desc")) {
         return a.desc.localeCompare(b.desc)
+      } else if (args.sort === "value") {
+        return a.value - b.value;
+      } else if (args.stats) {
+        return a.mean - b.mean;
       }
       return a.value - b.value;
     });

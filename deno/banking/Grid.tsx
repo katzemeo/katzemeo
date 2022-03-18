@@ -20,7 +20,15 @@ export class Grid extends Component {
             <th>From</th>
             <th>To</th>
             <th>Count</th>
-            <th>Value</th>
+            <th>Total</th>
+
+            {(() => { if (this.props.args.stats) {
+              return <th>Average</th>
+            } })()}
+
+            {(() => { if (this.props.args.stats) {
+              return <th>Std Dev</th>
+            } })()}
           </tr>
         </thead>
         {this.props.rows.map((row: any) => {
@@ -32,6 +40,14 @@ export class Grid extends Component {
               <td>{DATE(row.to)}</td>
               <td>{row.count}</td>
               <td>{CUR(row.value)}</td>
+
+              {(() => { if (this.props.args.stats) {
+                return <td>{CUR(row.mean)}</td>
+              } })()}
+
+              {(() => { if (this.props.args.stats) {
+                return <td>{CUR(row.stddev)}</td>
+              } })()}
             </tr>
           );
         })}
