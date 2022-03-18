@@ -88,7 +88,14 @@ Usage:
   const files: string[] = [];
   try {
     checkFiles(args, files);
-    await categorizeFiles(args, files, output);
+    const result = await categorizeFiles(args, files, output);
+    if (!result) {
+      Deno.exit(-1);
+    }
+
+    if (args.debug) {
+      console.debug(output);
+    }
     output.sort(function (a: any, b: any) {
       if (args.sort === "count") {
         return b.count - a.count;

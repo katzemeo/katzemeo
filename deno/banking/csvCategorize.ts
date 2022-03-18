@@ -4,6 +4,11 @@ import { StringReader } from "https://deno.land/std@0.128.0/io/readers.ts";
 import { BufReader } from "https://deno.land/std@0.128.0/io/bufio.ts";
 
 const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency" }).format;
+const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "America/Toronto";
+
+function DATE(dt: Date, timeZone=TIME_ZONE) {
+  return dt ? new Date(dt).toLocaleDateString('en-us', { timeZone: timeZone, weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "";
+}
 
 const parseCSVText = async (text: string) => {
   const bufReader = new BufReader(new StringReader(text));
@@ -33,18 +38,21 @@ const DESC_1_REGEX = [
   { pattern: `ATM withdrawal - .*` },
   { pattern: `BR TO BR - [0-9]+`, credit: false },
   { pattern: `BR TO BR - [0-9]+`, credit: true },
-  { pattern: `Bill Payment`, categorize: true },
+  { pattern: `Bill Payment|BILL PAYMENT`, categorize: true, buckets: [`(TELPAY BILL)P[0-9]+`] },
   { pattern: `COMMERCIAL TAXES`, categorize: true },
   { pattern: `Cash withdrawal` },
-  { pattern: `Cheque - [0-9]+` },
+  { pattern: `(Cheque|CHEQUE) - [0-9]+` },
   { pattern: `Cheque returned NSF` },
-  { pattern: `Chq Printing Fee`, categorize: true },
+  { pattern: `Chq Printing Fee|CHQ PRINTING FEE`, categorize: true },
   { pattern: `Credit Memo`, categorize: true },
   { pattern: `Credit memo` },
   { pattern: `Deposit [' ']* [0-9]+` },
   { pattern: `Deposit`, credit: false, categorize: true },
   { pattern: `Deposit`, credit: true, categorize: true },
   { pattern: `Federal Payment`, categorize: true },
+  { pattern: `ELECTRONIC ITEM FEE`, categorize: true },
+  { pattern: `Electronic transaction fee`, categorize: false },
+  { pattern: `Inactive account fee`, categorize: true },
   { pattern: `INTERAC e-Transfer cancel - [0-9]+` },
   { pattern: `INTERAC e-Transfer fee` },
   { pattern: `In branch cash deposited fee`, categorize: false },
@@ -53,7 +61,9 @@ const DESC_1_REGEX = [
   { pattern: `Item returned NSF` },
   { pattern: `Items on deposit fee`, categorize: false },
   { pattern: `Loan payment`, categorize: true },
-  { pattern: `Misc Payment`, categorize: true },
+  { pattern: `MINIMUM FEE`, categorize: true },
+  { pattern: `Minimum monthly fee`, categorize: true },
+  { pattern: `Misc Payment|MISC PAYMENT`, categorize: true },
   { pattern: `Monthly fee` },
   { pattern: `NSF item fee` },
   { pattern: `Online Banking payment - [0-9]+`, categorize: true },
@@ -66,6 +76,7 @@ const DESC_1_REGEX = [
   { pattern: `Overdraft interest`, categorize: true },
   { pattern: `Pay Employee-Vendor`, categorize: true },
   { pattern: `Regular transaction fee`, categorize: false },
+  { pattern: `SERVICE FEE`, categorize: false },
   { pattern: `e-Transfer received` },
   { pattern: `e-Transfer sent`, categorize: true },
 
@@ -112,7 +123,7 @@ function descMapToCSV(json: any, output: any = null) {
       let desc2Map: any = json[key].desc2Map;
       for (const key2 in desc2Map) {
         const subcategory = key2 ? ` - [${key2}]` : "";
-        const row = {desc: `"${key}${subcategory}"`, count: desc2Map[key2].count, value: desc2Map[key2].value.toFixed(2)};
+        const row = {desc: `"${key}${subcategory}"`, from: json[key].from, to: json[key].to, count: desc2Map[key2].count, value: desc2Map[key2].value.toFixed(2)};
         if (output) {
           output.push(row);
         } else {
@@ -120,7 +131,7 @@ function descMapToCSV(json: any, output: any = null) {
         }
       }
     } else {
-      const row = {desc: `"${key}"`, count: json[key].count, value: json[key].value.toFixed(2)};
+      const row = {desc: `"${key}"`, from: json[key].from, to: json[key].to, count: json[key].count, value: json[key].value.toFixed(2)};
       if (output) {
         output.push(row);
       } else {
@@ -169,26 +180,100 @@ function categorize(regexDefn: any, desc1Map: any, tx: any, key: any, value: Num
   }
 }
 
+function match(regexDefns: any, desc1Map: any, tx: any, date: Date, value: Number) {
+  const credit = (value > 0);
+  let matched = false;
+  regexDefns.every((rd: any) => {
+
+    let key = rd.credit === undefined ? rd.pattern : rd.credit ? rd.pattern + " - CR" : rd.pattern + " - DR";
+    if (rd.regex.test(tx["Description 1"].trim()) && (rd.credit === undefined || rd.credit === credit)) {
+      matched = true;
+      if (desc1Map[key] === undefined) {
+        desc1Map[key] = { count: 1, credit: credit, from: date, to: date, value: value, desc2Map: rd.categorize ? {} : undefined };
+      } else {
+        if (desc1Map[key].credit != credit) {
+          console.debug(tx);
+          console.debug(desc1Map[key]);
+          throw new Error(`Unexpected credit/debit for "${key}" with credit=${credit}!`);
+        }
+
+        desc1Map[key].count += 1;
+        if (desc1Map[key].from.getTime() > date.getTime()) {
+          desc1Map[key].from = date;
+        } else if (desc1Map[key].to.getTime() < date.getTime()) {
+          desc1Map[key].to = date;
+        }
+
+        desc1Map[key].value += value;
+      }
+
+      if (rd.categorize) {
+        categorize(rd, desc1Map, tx, key, value);
+      } else if (rd.categorize == undefined && tx["Description 2"]) {
+        console.warn(`Unknown category: "${key}" : [${tx["Description 2"]}]`);
+      }
+
+      // break loop
+      return false;
+    }
+
+    return true;
+  });
+
+  return matched;
+}
+
 export async function categorizeFiles(args: any, files: string[], output: any, regexDefns: any = DESC_1_REGEX) {
   prepareRegex(regexDefns);
 
   let desc1Map: any = {};
   let TOTAL_DEBITS = 0;
   let TOTAL_CREDITS = 0;
+  let TOTAL_UNMATCHED_DEBITS = 0;
+  let TOTAL_UNMATCHED_CREDITS = 0;
+  let TOTAL_UNMATCHED = 0;
+  let FROM: any = null;
+  let TO: any = null;
 
   for (let i = 0; i < files.length; i++) {
     try {
       const filename = basename(files[i]);
       const json = await parseCSVFile(files[i]);
-      let credit: boolean;
 
       let count = 0;
+      let unmatched = 0;
       let debits = 0;
       let credits = 0;
       let totalDebits = 0;
       let totalCredits = 0;
+      let totalUnmatchedDebits = 0;
+      let totalUnmatchedCredits = 0;
+
+      let accountNo: any = null;
+      let date: any;
+      let from: any = null;
+      let to: any = null;
 
       json.forEach((tx) => {
+        if (accountNo && accountNo !== tx["Account Number"]) {
+          throw new Error(`Multiple account numbers ("${accountNo}" & "${tx["Account Number"]}") found!`);
+        } else {
+          accountNo = tx["Account Number"];
+        }
+
+        date = new Date(tx["Transaction Date"]);
+        if (from && from.getTime() > date.getTime()) {
+          from = date;
+        } else if (!from) {
+          from = date;
+        }
+  
+        if (to && to.getTime() < date.getTime()) {
+          to = date;
+        } else if (!to) {
+          to = date;
+        }
+
         if (tx["CAD$"]) {
           count++;
 
@@ -203,41 +288,19 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
             throw new Error("Unexpected Zero value!");
           }
 
-          credit = (value > 0);
-          let matched = false;
-          regexDefns.every((rd: any) => {
+          let matched = match(regexDefns, desc1Map, tx, date, value);
+          if (!matched) {
+            unmatched++;
 
-            let key = rd.credit === undefined ? rd.pattern : rd.credit ? rd.pattern + " - CR" : rd.pattern + " - DR";
-            if (rd.regex.test(tx["Description 1"].trim()) && (rd.credit === undefined || rd.credit === credit)) {
-              matched = true;
-              if (desc1Map[key] === undefined) {
-                desc1Map[key] = { count: 1, credit: credit, value: value, desc2Map: rd.categorize ? {} : undefined };
-              } else {
-                if (desc1Map[key].credit != credit) {
-                  console.debug(tx);
-                  console.debug(desc1Map[key]);
-                  throw new Error(`Unexpected credit/debit for "${key}" with credit=${credit}!`);
-                }
-
-                desc1Map[key].count += 1;
-                desc1Map[key].value += value;
-              }
-
-              if (rd.categorize) {
-                categorize(rd, desc1Map, tx, key, value);
-              } else if (rd.categorize == undefined && tx["Description 2"]) {
-                console.warn(key + ": " + tx["Description 2"]);
-              }
-
-              // break loop
-              return false;
+            if (value < 0) {
+              debits++;
+              TOTAL_UNMATCHED_DEBITS += value;
+            } else if (value > 0) {
+              credits++;
+              TOTAL_UNMATCHED_CREDITS += value;
             }
 
-            return true;
-          });
-
-          if (!matched) {
-            console.warn(tx["Description 1"]);
+            console.warn(`Unknown category: "${tx["Description 1"]}" on ${DATE(date)} of ${CUR(value)} ignored!`);
           }
         } else if (tx["USD$"]) {
           throw new Error("Unexpected USD transaction!");
@@ -246,10 +309,28 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
 
       TOTAL_DEBITS += totalDebits;
       TOTAL_CREDITS += totalCredits;
+      TOTAL_UNMATCHED_DEBITS += totalUnmatchedDebits;
+      TOTAL_UNMATCHED_CREDITS += totalUnmatchedCredits;
+      TOTAL_UNMATCHED += unmatched;
+
+      if (FROM && FROM.getTime() > from.getTime()) {
+        FROM = from;
+      } else if (!FROM) {
+        FROM = from;
+      }
+
+      if (TO && TO.getTime() < to.getTime()) {
+        TO = to;
+      } else if (!TO) {
+        TO = to;
+      }
 
       if (args.summary) {
-        console.info(`File: "${filename}"`);
-        console.info(`--> Processed ${count} transactions (debits=${debits}, credits=${credits}) for total of ${CUR(totalDebits)} + ${CUR(totalCredits)} = ${CUR(totalDebits + totalCredits)}`);
+        console.info(`File: "${filename}" [From: ${DATE(from)} To: ${DATE(to)}]`);
+        console.info(`--> Processed ${count} transactions (debits=${debits}, credits=${credits}) for balance of ${CUR(totalDebits)} + ${CUR(totalCredits)} = ${CUR(totalDebits + totalCredits)}`);
+        if (unmatched > 0) {
+          console.info(`--> WARNING: ${unmatched} Unmatched transactions (with balance of ${CUR(totalUnmatchedDebits)} + ${CUR(totalUnmatchedCredits)} = ${CUR(totalUnmatchedDebits + totalUnmatchedCredits)})`);
+        }
       }
     } catch (err) {
       console.error(`Error processing CSV file "${files[i]}".`);
@@ -258,12 +339,16 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
       } else {
         console.error(err.message ?? err);
       }
-      return;
+      return false;
     }
   }
 
   if (args.summary) {
     console.log(`\nTOTAL DEBITS: ${CUR(TOTAL_DEBITS)} CREDITS: ${CUR(TOTAL_CREDITS)} = BALANCE: ${CUR(TOTAL_DEBITS + TOTAL_CREDITS)}`);
+  }
+
+  if (TOTAL_UNMATCHED > 0) {
+    console.info(`WARNING: TOTAL ${TOTAL_UNMATCHED} Unmatched transactions (with balance of ${CUR(TOTAL_UNMATCHED_DEBITS)} + ${CUR(TOTAL_UNMATCHED_CREDITS)} = ${CUR(TOTAL_UNMATCHED_DEBITS + TOTAL_UNMATCHED_CREDITS)})`);
   }
 
   if (!output) {
@@ -282,6 +367,8 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
   if (!output) {
     console.log();
   }
+
+  return true;
 }
 
 export function checkFiles(args: any, filePaths: string[]) {
