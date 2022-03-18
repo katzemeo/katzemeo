@@ -1,5 +1,5 @@
 import { parse as parseArgs } from "https://deno.land/std@0.128.0/flags/mod.ts"
-import { serve } from "https://deno.land/std@0.116.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
 import { h, renderSSR, Helmet } from "https://deno.land/x/nano_jsx@v0.0.30/mod.ts";
 import { open } from "https://deno.land/x/open/index.ts";
 import { Grid } from "./Grid.tsx";
@@ -79,6 +79,7 @@ Usage:
   -f or --file <CSV file> : specify the path to CSV file (repeat option to specify multiple files)
   -d or --dir <source dir> : specify the folder containing CSV file(s) to parse (defaults to current directory)
   -s or --summary: print transaction summary for each CSV file as well as grand totals
+  --sort: sort the categories by "desc" asc, "count" desc, or "value" asc (default)
   -o or --open: automatically open default web browser to show the transaction summary
   -p or --port: specify the port to use (defaults to 7777)
   --debug : print diagnostics for validating the processing
@@ -91,22 +92,27 @@ Usage:
     output.sort(function (a: any, b: any) {
       if (args.sort === "count") {
         return b.count - a.count;
+      } else if (args.sort.startsWith("desc")) {
+        return a.desc.localeCompare(b.desc)
       }
       return a.value - b.value;
     });
 
-    const PORT = args.port ?? Deno.env.get("PORT") ?? "7777";
-    const addr = `:${PORT}`;
-    console.log(`Listening on http://localhost${addr}`);
+    const port = Number(args.port ?? Deno.env.get("PORT") ?? 7777);
+    console.log(`Listening on http://localhost:${port}`);
 
     if (args.open) {
-      open(`http://localhost${addr}`);
+      open(`http://localhost:${port}`);
     }
-    
-    await serve(handleRequest, { addr });
+
+    await serve(handleRequest, { port });
 
   } catch (err) {
-    console.error(`Error: ${err.message}`);
+    if (args.debug) {
+      console.error(err);
+    } else {
+      console.error(`Error: ${err.message}`);
+    }
   }
 }
 

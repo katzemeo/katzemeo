@@ -272,6 +272,9 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
 
   if (args.debug) {
     console.debug(desc1Map);
+    if (output) {
+      descMapToCSV(desc1Map, output);
+    }
   } else {
     descMapToCSV(desc1Map, output);
   }
