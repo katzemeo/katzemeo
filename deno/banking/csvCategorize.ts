@@ -1,4 +1,3 @@
-import { parse as parseArgs } from "https://deno.land/std@0.128.0/flags/mod.ts"
 import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.128.0/path/mod.ts";
 import { parse as parseCSV } from "https://deno.land/std@0.128.0/encoding/csv.ts";
 import { StringReader } from "https://deno.land/std@0.128.0/io/readers.ts";
@@ -6,7 +5,7 @@ import { BufReader } from "https://deno.land/std@0.128.0/io/bufio.ts";
 
 const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency" }).format;
 
-export const parseCSVText = async (text: string) => {
+const parseCSVText = async (text: string) => {
   const bufReader = new BufReader(new StringReader(text));
   let json: Array<any> = await parseCSV(bufReader, {
     skipFirstRow: true
@@ -14,7 +13,7 @@ export const parseCSVText = async (text: string) => {
   return json;
 };
 
-export const parseCSVFile = async (csvFile: string) => {
+const parseCSVFile = async (csvFile: string) => {
   try {
     const text = await Deno.readTextFile(csvFile);
     //console.log(text);
@@ -104,17 +103,29 @@ function prepareRegex(regexDefns: any) {
   });
 }
 
-function descMapToCSV(json: any) {
-  console.log(`"DESCRIPTION",COUNT,TOTAL`);
+function descMapToCSV(json: any, output: any = null) {
+  if (!output) {
+    console.log(`"DESCRIPTION",COUNT,TOTAL`);
+  }
   for (const key in json) {
     if (json[key].desc2Map) {
       let desc2Map: any = json[key].desc2Map;
       for (const key2 in desc2Map) {
         const subcategory = key2 ? ` - [${key2}]` : "";
-        console.log(`"${key}${subcategory}", ${desc2Map[key2].count}, ${desc2Map[key2].value.toFixed(2)}`);
+        const row = {desc: `"${key}${subcategory}"`, count: desc2Map[key2].count, value: desc2Map[key2].value.toFixed(2)};
+        if (output) {
+          output.push(row);
+        } else {
+          console.log(row.desc +", "+ row.count +", "+ row.value);
+        }
       }
     } else {
-      console.log(`"${key}", ${json[key].count}, ${json[key].value.toFixed(2)}`);
+      const row = {desc: `"${key}"`, count: json[key].count, value: json[key].value.toFixed(2)};
+      if (output) {
+        output.push(row);
+      } else {
+        console.log(row.desc +", "+ row.count +", "+ row.value);
+      }
     }
   }
 }
@@ -158,7 +169,9 @@ function categorize(regexDefn: any, desc1Map: any, tx: any, key: any, value: Num
   }
 }
 
-async function categorizeFiles(args: any, files: string[], regexDefns: any) {
+export async function categorizeFiles(args: any, files: string[], output: any, regexDefns: any = DESC_1_REGEX) {
+  prepareRegex(regexDefns);
+
   let desc1Map: any = {};
   let TOTAL_DEBITS = 0;
   let TOTAL_CREDITS = 0;
@@ -253,23 +266,22 @@ async function categorizeFiles(args: any, files: string[], regexDefns: any) {
     console.log(`\nTOTAL DEBITS: ${CUR(TOTAL_DEBITS)} CREDITS: ${CUR(TOTAL_CREDITS)} = BALANCE: ${CUR(TOTAL_DEBITS + TOTAL_CREDITS)}`);
   }
 
-  console.log();
+  if (!output) {
+    console.log();
+  }
+
   if (args.debug) {
     console.debug(desc1Map);
   } else {
-    descMapToCSV(desc1Map);
+    descMapToCSV(desc1Map, output);
   }
-  console.log();
+
+  if (!output) {
+    console.log();
+  }
 }
 
-function checkUsage(args: any) {
-  if (args["_"].length > 0) {
-    return false;
-  }
-  return true;
-}
-
-function checkFiles(args: any, filePaths: string[]) {
+export function checkFiles(args: any, filePaths: string[]) {
   const dir = normalize(args.dir);
   const dirInfo = Deno.statSync(dir);
   //console.log(dirInfo);
@@ -315,47 +327,4 @@ function checkFiles(args: any, filePaths: string[]) {
       throw new Error(`Invalid or inaccessible file ${filePath}`);
     }
   });
-}
-
-const args = parseArgs(Deno.args, {
-  default: {
-    s: false,
-    debug: false,
-    d: "."
-  },
-  boolean: ["a", "debug"],
-  string: ["f", "d"],
-  alias: {
-    f: "file",
-    d: "dir",
-    s: "summary",
-    h: "help"
-  }
-});
-
-if (args.debug) {
-  console.log(args);
-}
-
-if (args.help || !checkUsage(args)) {
-  console.log(`Parse banking CSV files and summarize the transactions based on "Description 1" and "Description 2" columns in CAD$\n
-Examples:
-  csvCategorize.exe -d c:\\laundromat\\bank -f "2020 - banking.csv" -f "2021 - banking.csv"
-  csvCategorize.exe -d c:\\laundromat\\bank -summary
-
-Usage:
-  -f or -file <CSV file> : specify the path to CSV file (repeat option to specify multiple files)
-  -d or -dir <source dir> : specify the folder containing CSV file(s) to parse (defaults to current directory)
-  -s or summary: print transaction summary for each CSV file as well as grand totals
-  -debug : print diagnostics for validating the processing
-  -h or -help : show this usage help`);
-} else {
-  const files: string[] = [];
-  try {
-    checkFiles(args, files);
-    prepareRegex(DESC_1_REGEX);
-    await categorizeFiles(args, files, DESC_1_REGEX);
-  } catch (err) {
-    console.error(`Error: ${err.message}`);
-  }
 }
