@@ -2,8 +2,7 @@ import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.1
 import { parse as parseCSV } from "https://deno.land/std@0.128.0/encoding/csv.ts";
 import { StringReader } from "https://deno.land/std@0.128.0/io/readers.ts";
 import { BufReader } from "https://deno.land/std@0.128.0/io/bufio.ts";
-//import { standardDeviation as stddev } from "https://deno.land/x/simplestatistics@v7.7.5.ts";
-import { standardDeviation as stddev, mean } from "https://unpkg.com/simple-statistics@7.7.5/index.js?module";
+import { standardDeviation as stddev, mean, extent } from "https://unpkg.com/simple-statistics@7.7.5/index.js?module";
 
 const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency" }).format;
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "America/Toronto";
@@ -118,7 +117,7 @@ function prepareRegex(regexDefns: any) {
 
 function descMapToCSV(args: any, json: any, output: any = null) {
   if (!output) {
-    console.log(`"DESCRIPTION",COUNT,TOTAL,FROM,TO` + (args.stats ? `,MEAN,STDDEV` : ""));
+    console.log(`"DESCRIPTION",COUNT,TOTAL,FROM,TO` + (args.stats ? `,MEAN,MIN,MAX,STDDEV` : ""));
   }
   for (const key in json) {
     if (json[key].desc2Map) {
@@ -129,13 +128,14 @@ function descMapToCSV(args: any, json: any, output: any = null) {
         if (args.stats) {
           row.mean = mean(desc2Map[key2].values).toFixed(2);
           row.stddev = stddev(desc2Map[key2].values).toFixed(2);
+          row.extent = extent(desc2Map[key2].values);
         }
 
         if (output) {
           output.push(row);
         } else {
           console.log(row.desc +", "+ row.count +", "+ row.value +", "+ row.from.toLocaleDateString() +", "+ row.to.toLocaleDateString() +
-            (args.stats ? ", "+ row.mean +", "+ row.stddev : ""));
+            (args.stats ? ", "+ row.mean +", "+ row.extent[0] +", "+ row.extent[1] +", "+ row.stddev : ""));
         }
       }
     } else {
@@ -143,13 +143,14 @@ function descMapToCSV(args: any, json: any, output: any = null) {
       if (args.stats) {
         row.mean = mean(json[key].values).toFixed(2);
         row.stddev = stddev(json[key].values).toFixed(2);
+        row.extent = extent(json[key].values);
       }
 
       if (output) {
         output.push(row);
       } else {
         console.log(row.desc +", "+ row.count +", "+ row.value +", "+ row.from.toLocaleDateString() +", "+ row.to.toLocaleDateString() +
-          (args.stats ? ", "+ row.mean +", "+ row.stddev : ""));
+          (args.stats ? ", "+ row.mean +", "+ row.extent[0] +", "+ row.extent[1] +", "+ row.stddev : ""));
       }
     }
   }

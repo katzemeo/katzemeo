@@ -6,7 +6,7 @@ import { Grid } from "./Grid.tsx";
 import { checkFiles, categorizeFiles } from "./csvCategorize.ts"
 
 const output: any = [];
-const title = `TX Categories`;
+const title = `TX 💸 Categories`;
 
 const App = () => (
   <div>
@@ -97,12 +97,18 @@ Usage:
       console.debug(output);
     }
     output.sort(function (a: any, b: any) {
-      if (args.sort === "count") {
+      if (args.sort === "from") {
+        return b.from.getTime() - a.from.getTime();
+      } else if (args.sort === "to") {
+          return b.to.getTime() - a.to.getTime();  
+      } else if (args.sort === "count") {
         return b.count - a.count;
       } else if (args.sort.startsWith("desc")) {
         return a.desc.localeCompare(b.desc)
       } else if (args.sort === "value") {
         return a.value - b.value;
+      } else if (args.stats && args.sort === "stddev") {
+        return b.stddev - a.stddev;
       } else if (args.stats) {
         return a.mean - b.mean;
       }
