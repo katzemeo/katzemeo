@@ -102,13 +102,25 @@ Usage:
       } else if (args.sort === "to") {
           return b.to.getTime() - a.to.getTime();  
       } else if (args.sort === "count") {
-        return b.count - a.count;
+        if (b.count !== a.count) {
+          return b.count - a.count;
+        }
       } else if (args.sort.startsWith("desc")) {
         return a.desc.localeCompare(b.desc)
       } else if (args.sort === "value") {
         return a.value - b.value;
+      } else if (args.sort === "rate") {
+        if (a.rate && b.rate) {
+          return a.rate - b.rate;
+        } else if (a.rate || b.rate) {
+          return a.rate ? -1 : 1;
+        }
       } else if (args.stats && args.sort === "stddev") {
-        return b.stddev - a.stddev;
+        if (a.stddev && b.stddev && b.stddev !== a.stddev) {
+          return b.stddev - a.stddev;
+        } else if (a.stddev || b.stddev) {
+          return a.stddev ? -1 : 1;
+        }
       } else if (args.stats) {
         return a.mean - b.mean;
       }

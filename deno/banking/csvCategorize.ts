@@ -115,19 +115,35 @@ function prepareRegex(regexDefns: any) {
   });
 }
 
+const MILLIS_PER_DAY = 1000*60*60*24;
+const MIN_RATE_DATE_RANGE = 30;
+const MIN_RATE_TX_COUNT = 5;
+
+function calcPerDayRate(row: any) {
+  const from = row.from;
+  const to = row.to;
+  let delta: any = (to.getTime() - from.getTime()) / MILLIS_PER_DAY;
+  if (delta >= MIN_RATE_DATE_RANGE && row.count >= MIN_RATE_TX_COUNT) {
+    const perDayRate: any = row.value / delta;
+    row.rate = Number(perDayRate.toFixed(3));
+  }
+  row.days = Number(delta.toFixed(0));
+}
+
 function descMapToCSV(args: any, json: any, output: any = null) {
   if (!output) {
-    console.log(`"DESCRIPTION",COUNT,TOTAL,FROM,TO` + (args.stats ? `,MEAN,MIN,MAX,STDDEV` : ""));
+    console.log(`"DESCRIPTION",COUNT,TOTAL,FROM,TO,RATE` + (args.stats ? `,MEAN,MIN,MAX,STDDEV` : ""));
   }
   for (const key in json) {
     if (json[key].desc2Map) {
       let desc2Map: any = json[key].desc2Map;
       for (const key2 in desc2Map) {
         const subcategory = key2 ? ` - [${key2}]` : "";
-        const row: any = {desc: `"${key}${subcategory}"`, from: json[key].from, to: json[key].to, count: desc2Map[key2].count, value: desc2Map[key2].value.toFixed(2)};
+        const row: any = {desc: `"${key}${subcategory}"`, from: json[key].from, to: json[key].to, count: desc2Map[key2].count, value: Number(desc2Map[key2].value.toFixed(2))};
+        calcPerDayRate(row);
         if (args.stats) {
-          row.mean = mean(desc2Map[key2].values).toFixed(2);
-          row.stddev = stddev(desc2Map[key2].values).toFixed(2);
+          row.mean = Number(mean(desc2Map[key2].values).toFixed(2));
+          row.stddev = Number(stddev(desc2Map[key2].values).toFixed(2));
           row.extent = extent(desc2Map[key2].values);
         }
 
@@ -139,10 +155,11 @@ function descMapToCSV(args: any, json: any, output: any = null) {
         }
       }
     } else {
-      const row: any = {desc: `"${key}"`, from: json[key].from, to: json[key].to, count: json[key].count, value: json[key].value.toFixed(2)};
+      const row: any = {desc: `"${key}"`, from: json[key].from, to: json[key].to, count: json[key].count, value: Number(json[key].value.toFixed(2))};
+      calcPerDayRate(row);
       if (args.stats) {
-        row.mean = mean(json[key].values).toFixed(2);
-        row.stddev = stddev(json[key].values).toFixed(2);
+        row.mean = Number(mean(json[key].values).toFixed(2));
+        row.stddev = Number(stddev(json[key].values).toFixed(2));
         row.extent = extent(json[key].values);
       }
 
