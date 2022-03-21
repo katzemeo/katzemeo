@@ -11,6 +11,14 @@ function DATE(dt: Date, timeZone=TIME_ZONE) {
   return dt ? new Date(dt).toLocaleDateString('en-us', { timeZone: timeZone, weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "";
 }
 
+export function parseDate(date: any) {
+  let millis = Date.parse(date);
+  if (isNaN(millis)) {
+    throw new Error(`Unable to parse invalid date "${date}"`);
+  }
+  return new Date(millis);
+}
+
 const parseCSVText = async (text: string) => {
   const bufReader = new BufReader(new StringReader(text));
   let json: Array<any> = await parseCSV(bufReader, {
@@ -122,7 +130,7 @@ const MIN_RATE_TX_COUNT = 5;
 function calcPerDayRate(row: any) {
   const from = row.from;
   const to = row.to;
-  let delta: any = (to.getTime() - from.getTime()) / MILLIS_PER_DAY;
+  let delta: any = 1 + (to.getTime() - from.getTime()) / MILLIS_PER_DAY;
   if (delta >= MIN_RATE_DATE_RANGE && row.count >= MIN_RATE_TX_COUNT) {
     const perDayRate: any = row.value / delta;
     row.rate = Number(perDayRate.toFixed(3));
@@ -139,12 +147,14 @@ function descMapToCSV(args: any, json: any, output: any = null) {
       let desc2Map: any = json[key].desc2Map;
       for (const key2 in desc2Map) {
         const subcategory = key2 ? ` - [${key2}]` : "";
-        const row: any = {desc: `"${key}${subcategory}"`, from: json[key].from, to: json[key].to, count: desc2Map[key2].count, value: Number(desc2Map[key2].value.toFixed(2))};
+        const descEntry = desc2Map[key2];
+
+        const row: any = {desc: `"${key}${subcategory}"`, from: descEntry.from, to: descEntry.to, count: descEntry.count, value: Number(descEntry.value.toFixed(2))};
         calcPerDayRate(row);
         if (args.stats) {
-          row.mean = Number(mean(desc2Map[key2].values).toFixed(2));
-          row.stddev = Number(stddev(desc2Map[key2].values).toFixed(2));
-          row.extent = extent(desc2Map[key2].values);
+          row.mean = Number(mean(descEntry.values).toFixed(2));
+          row.stddev = Number(stddev(descEntry.values).toFixed(2));
+          row.extent = extent(descEntry.values);
         }
 
         if (output) {
@@ -173,7 +183,7 @@ function descMapToCSV(args: any, json: any, output: any = null) {
   }
 }
 
-function bucketSubCategories(args: any, bucketsRegex: any, desc2Map: any, tx: any, key: any, value: Number) {
+function bucketSubCategories(args: any, bucketsRegex: any, desc2Map: any, tx: any, key: any, value: Number, date: Date) {
   let match = false;
   let desc = tx["Description 2"].trim();
   for (let i=0; i<bucketsRegex.length; i++) {
@@ -190,7 +200,7 @@ function bucketSubCategories(args: any, bucketsRegex: any, desc2Map: any, tx: an
   }
 
   if (desc2Map[desc] === undefined) {
-    desc2Map[desc] = { count: 1, value: value, values: args.stats ? [ value ] : undefined };
+    desc2Map[desc] = { count: 1, from: date, to: date, value: value, values: args.stats ? [ value ] : undefined };
   } else {
     desc2Map[desc].count += 1;
     desc2Map[desc].value += value;
@@ -200,20 +210,31 @@ function bucketSubCategories(args: any, bucketsRegex: any, desc2Map: any, tx: an
   }
 }
 
-function categorize(args: any, regexDefn: any, desc1Map: any, tx: any, key: any, value: Number) {
+function extendValueFromTo(args: any, descEntry: any, value: Number, date: Date, categorize = false) {
+  descEntry.count += 1;
+  descEntry.value += value;
+
+  if (args.stats && !categorize) {
+    descEntry.values.push(value);
+  }
+
+  if (descEntry.from.getTime() > date.getTime()) {
+    descEntry.from = date;
+  } else if (descEntry.to.getTime() < date.getTime()) {
+    descEntry.to = date;
+  }
+}
+
+function categorize(args: any, regexDefn: any, desc1Map: any, tx: any, key: any, value: Number, date: Date) {
   let desc2Map: any = desc1Map[key].desc2Map;
   if (regexDefn.bucketsRegex) {
-    bucketSubCategories(args, regexDefn.bucketsRegex, desc2Map, tx, key, value);
+    bucketSubCategories(args, regexDefn.bucketsRegex, desc2Map, tx, key, value, date);
   } else {
     const key2 = tx["Description 2"].trim();
     if (desc2Map[key2] === undefined) {
-      desc2Map[key2] = { count: 1, value: value, values: args.stats ? [ value ] : undefined };
+      desc2Map[key2] = { count: 1, from: date, to: date, value: value, values: args.stats ? [ value ] : undefined };
     } else {
-      desc2Map[key2].count += 1;
-      desc2Map[key2].value += value;
-      if (args.stats) {
-        desc2Map[key2].values.push(value);
-      }
+      extendValueFromTo(args, desc2Map[key2], value, date);  
     }
   }
 }
@@ -228,7 +249,7 @@ function match(args: any, regexDefns: any, desc1Map: any, tx: any, date: Date, v
       matched = true;
       if (desc1Map[key] === undefined) {
         desc1Map[key] = { count: 1, credit: credit, from: date, to: date, value: value,
-          values: (args.stats && !rd.categorize) ? [ value ] : undefined, desc2Map: rd.categorize ? {} : undefined };
+          values: (args.stats && !rd.categorize) ? [ value ] : undefined, desc2Map: rd.categorize ? { } : undefined };
       } else {
         if (desc1Map[key].credit != credit) {
           console.debug(tx);
@@ -236,25 +257,16 @@ function match(args: any, regexDefns: any, desc1Map: any, tx: any, date: Date, v
           throw new Error(`Unexpected credit/debit for "${key}" with credit=${credit}!`);
         }
 
-        desc1Map[key].count += 1;
-        if (desc1Map[key].from.getTime() > date.getTime()) {
-          desc1Map[key].from = date;
-        } else if (desc1Map[key].to.getTime() < date.getTime()) {
-          desc1Map[key].to = date;
-        }
-
-        desc1Map[key].value += value;
+        extendValueFromTo(args, desc1Map[key], value, date, rd.categorize);
       }
 
       if (rd.categorize) {
-        categorize(args, rd, desc1Map, tx, key, value);
+        categorize(args, rd, desc1Map, tx, key, value, date);
       } else if (rd.categorize == undefined && tx["Description 2"]) {
         console.warn(`Unknown category: "${key}" : [${tx["Description 2"]}]`);
-      } else if (args.stats) {
-        desc1Map[key].values.push(value);
       }
 
-      // break loop
+      // break every loop
       return false;
     }
 
@@ -262,6 +274,15 @@ function match(args: any, regexDefns: any, desc1Map: any, tx: any, date: Date, v
   });
 
   return matched;
+}
+
+function checkFilterTx(args: any, date: Date) {
+  if (args.from && date.getTime() < args.from.getTime()) {
+    return false;
+  } else if (args.to && date.getTime() > args.to.getTime()) {
+    return false;
+  }
+  return true;
 }
 
 export async function categorizeFiles(args: any, files: string[], output: any, regexDefns: any = DESC_1_REGEX) {
@@ -282,6 +303,7 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
       const json = await parseCSVFile(files[i]);
 
       let count = 0;
+      let filtered = 0;
       let unmatched = 0;
       let debits = 0;
       let credits = 0;
@@ -303,6 +325,7 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
         }
 
         date = new Date(tx["Transaction Date"]);
+
         if (from && from.getTime() > date.getTime()) {
           from = date;
         } else if (!from) {
@@ -313,6 +336,11 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
           to = date;
         } else if (!to) {
           to = date;
+        }
+
+        if (!checkFilterTx(args, date)) {
+          filtered++;
+          return; // Continue forEach loop
         }
 
         if (tx["CAD$"]) {
@@ -367,7 +395,7 @@ export async function categorizeFiles(args: any, files: string[], output: any, r
       }
 
       if (args.summary) {
-        console.info(`File: "${filename}" [From: ${DATE(from)} To: ${DATE(to)}]`);
+        console.info(`File: "${filename}" [From: ${DATE(from)} To: ${DATE(to)}]` + (filtered > 0 ? ` -- Filtered: ${filtered}` : ""));
         console.info(`--> Processed ${count} transactions (debits=${debits}, credits=${credits}) for balance of ${CUR(totalDebits)} + ${CUR(totalCredits)} = ${CUR(totalDebits + totalCredits)}`);
         if (unmatched > 0) {
           console.info(`--> WARNING: ${unmatched} Unmatched transactions (with balance of ${CUR(totalUnmatchedDebits)} + ${CUR(totalUnmatchedCredits)} = ${CUR(totalUnmatchedDebits + totalUnmatchedCredits)})`);

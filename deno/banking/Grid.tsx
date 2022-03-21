@@ -42,10 +42,10 @@ export class Grid extends Component {
           <tr>
             <th>#</th>
             <th>Description ℹ️</th>
-            <th>From 📅</th>
-            <th>To 📅</th>
             <th>Count #️⃣</th>
             <th>Total 💰</th>
+            <th>From 📅</th>
+            <th>To 📅</th>
             <th>Daily 💸</th>
 
             {(() => { if (this.props.args.stats) {
@@ -62,19 +62,22 @@ export class Grid extends Component {
             <tr>
               <td class="text-muted">{count++}</td>
               <td>{row.desc}</td>
-              <td>{DATE(row.from)}</td>
-              <td>{DATE(row.to)}</td>
-              <td>{row.count}</td>
+              <td>{row.count}</td>              
               <td class={row.value < 0 ? "text-danger" : "text-success"} title={formatDays(row.days)}>{CUR(row.value)}</td>
+              <td><nobr>{DATE(row.from)}</nobr></td>
+              <td><nobr>{DATE(row.to)}</nobr></td>
               <td class={row.rate < 0 ? "text-danger" : "text-success"} title={formatAnnual(row.rate)}>{row.rate ? CUR(row.rate) : ""}</td>
 
               {(() => { if (this.props.args.stats) {
                 return <td class={row.mean < 0 ? "text-danger" : "text-success"} title={formatTooltip(row.extent)}>{CUR(row.mean)}</td>
               } })()}
 
-              {(() => { if (this.props.args.stats && row.count > 1) {
-                return <td class={row.stddev > 0 ? "text-primary" : "text-dark"}>{CUR(row.stddev)}</td>
-              } else { return <td class="text-muted">{CUR(row.stddev)}</td> } })()}
+              {(() => { if (this.props.args.stats) {
+                if (row.count > 1) {
+                  return <td class={row.stddev > 0 ? "text-primary" : "text-dark"}>{CUR(row.stddev)}</td>
+                } else {
+                  return <td class="text-muted">{CUR(row.stddev)}</td>
+                }} })()}
             </tr>
           );
         })}

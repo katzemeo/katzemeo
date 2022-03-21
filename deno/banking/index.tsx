@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
 import { h, renderSSR, Helmet } from "https://deno.land/x/nano_jsx@v0.0.30/mod.ts";
 import { open } from "https://deno.land/x/open/index.ts";
 import { Grid } from "./Grid.tsx";
-import { checkFiles, categorizeFiles } from "./csvCategorize.ts"
+import { parseDate, checkFiles, categorizeFiles } from "./csvCategorize.ts"
 
 const output: any = [];
 const title = `TX 💸 Categories`;
@@ -42,6 +42,22 @@ function checkUsage(args: any) {
   if (args["_"].length > 0) {
     return false;
   }
+
+  try {
+    if (args.from) {
+      args.from = parseDate(args.from);
+      //console.debug(args.from);
+    }
+    if (args.to) {
+      args.to = parseDate(args.to);
+      //console.debug(args.to);
+    }
+  } catch (err) {
+    if (args.debug) {
+      console.log(err);
+    }
+    return false;
+  }
   return true;
 }
 
@@ -51,10 +67,10 @@ const args = parseArgs(Deno.args, {
     debug: false,
     d: ".",
     o: false,
-    sort: "mean"
+    sort: "value"
   },
   boolean: ["o", "stats", "debug"],
-  string: ["p", "f", "d", "sort"],
+  string: ["p", "f", "d", "sort", "from", "to"],
   alias: {
     p: "port",
     o: "open",
@@ -73,15 +89,18 @@ if (args.help || !checkUsage(args)) {
   console.log(`Parse banking CSV files and summarize the transactions based on "Description 1" and "Description 2" columns in CAD$\n
 Examples:
   csvSPA.exe -d c:\\laundromat\\bank -f "2020 - banking.csv" -f "2021 - banking.csv" --sort count -o
+  csvSPA.exe -d c:\\laundromat\\bank --stats -o --from 1-1-2021 --to 12-31-2021 -s
   csvSPA.exe -d c:\\laundromat\\bank --summary --open
 
 Usage:
   -f or --file <CSV file> : specify the path to CSV file (repeat option to specify multiple files)
   -d or --dir <source dir> : specify the folder containing CSV file(s) to parse (defaults to current directory)
-  -s or --summary: print transaction summary for each CSV file as well as grand totals
+  -s or --summary : print transaction summary for each CSV file as well as grand totals
+  --from <date> : specify minimum date to filter out transactions (dd-mm-yyyy)
+  --to <date> : specify maximum date to filter out transactions (dd-mm-yyyy)
   --sort: sort the categories by "desc" asc, "count" desc, or "value" asc (default)
-  -o or --open: automatically open default web browser to show the transaction summary
-  -p or --port: specify the port to use (defaults to 7777)
+  -o or --open : automatically open default web browser to show the transaction summary
+  -p or --port : specify the port to use (defaults to 7777)
   --debug : print diagnostics for validating the processing
   -h or --help : show this usage help`);
 } else {
@@ -100,7 +119,10 @@ Usage:
       if (args.sort === "from") {
         return b.from.getTime() - a.from.getTime();
       } else if (args.sort === "to") {
+        if (b.to.getTime() !== a.to.getTime()) {
           return b.to.getTime() - a.to.getTime();  
+        }
+        return b.from.getTime() - a.from.getTime();
       } else if (args.sort === "count") {
         if (b.count !== a.count) {
           return b.count - a.count;
@@ -109,6 +131,10 @@ Usage:
         return a.desc.localeCompare(b.desc)
       } else if (args.sort === "value") {
         return a.value - b.value;
+      } else if (args.sort === "days") {
+        if (b.days !== a.days) {
+          return b.days - a.days;
+        }
       } else if (args.sort === "rate") {
         if (a.rate && b.rate) {
           return a.rate - b.rate;
@@ -121,9 +147,10 @@ Usage:
         } else if (a.stddev || b.stddev) {
           return a.stddev ? -1 : 1;
         }
-      } else if (args.stats) {
+      } else if (args.stats && args.sort === "mean") {
         return a.mean - b.mean;
       }
+
       return a.value - b.value;
     });
 
