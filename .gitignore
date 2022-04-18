@@ -4,3 +4,4 @@ deno/supabase/prod-ca-2021.crt
 deno/alphavantage/.env.local
 deno/mongodb/.env.local
 deno/banking/csvCategorize.exe
+deno/roi/roi.exe

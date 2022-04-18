@@ -40,13 +40,13 @@ const getExchangeRate = async (fromCurrency: string, toCurrency: string = "CAD")
   return null;
 }
 
-const getDailySeries = async (symbol: string) => {
+const getDailySeries = async (symbol: string, outputsize="compact") => {
   if (!API_KEY) {
     throw new Error("Invalid or missing API Key!");
   }
 
   const url = new URL(ALPHA_VANTAGE_API_URL);
-  url.search = new URLSearchParams({ apikey: API_KEY, function: "TIME_SERIES_DAILY", outputsize: "compact", symbol: symbol }).toString();
+  url.search = new URLSearchParams({ apikey: API_KEY, function: "TIME_SERIES_DAILY", outputsize: outputsize, symbol: symbol }).toString();
   //console.log(url);
   let res = await fetch(url, {
     headers: getHeaders(),
@@ -67,8 +67,3 @@ const getDailySeries = async (symbol: string) => {
 
   return null;
 }
-
-//const result = await getDailySeries("SHOP.TO");
-const result = await getExchangeRate("USD");
-
-console.log(result);
