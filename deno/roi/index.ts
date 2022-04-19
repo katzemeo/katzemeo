@@ -173,5 +173,7 @@ async function handleRequest(request: Request): Promise<Response> {
 
 const port = Number(Deno.env.get("PORT") ?? 7777);
 console.log(`Listening on http://localhost:${port}`);
-open(`http://localhost:${port}`);
+if (port == 7777) {
+  open(`http://localhost:${port}`);
+}
 await serve(handleRequest, { port });
