@@ -118,7 +118,7 @@ const html = `
         <p> Welcome! </p>
         <p> The following tools can help you measure Return on Investments and assess your potential Cash Flow risks. </p>
         <ul>
-          <li>Use the <a href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab to help calculated the expected annual growth rate for your investments.</li>
+          <li>Use the <a href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab to help calculate the expected annual growth rate for your investments.</li>
           <li>Use the <a href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab to check if you have sufficient cash flow for your situation.</li>
         </ul>
       </div>
