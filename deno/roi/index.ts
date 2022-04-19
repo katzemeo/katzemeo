@@ -74,9 +74,9 @@ const html = `
       el = document.getElementById("roi");
       el.value = PCT(roi*100) +" % or "+ CUR(ret - amount);
       if (roi < 0) {
-        el.className = "input-group-text text-danger";
+        el.className = "form-control text-danger";
       } else {
-        el.className = "input-group-text text-success";
+        el.className = "form-control text-success";
       }
 
       let parentEl = document.getElementById("table");
@@ -85,21 +85,23 @@ const html = `
       el = document.getElementById("years");
       if (el.value) {
         let years = parseFloat(el.value);
-        const cagr = computeCAGR(amount, ret, years);
-        el = document.getElementById("cagr");
-        el.value = PCT(cagr*100) +" %";
-        if (cagr < 0) {
-          el.className = "input-group-text text-danger";
-        } else {
-          el.className = "input-group-text text-success";
-        }
+        if (years > 0 && years < 100) {
+          const cagr = computeCAGR(amount, ret, years);
+          el = document.getElementById("cagr");
+          el.value = PCT(cagr*100) +" %";
+          if (cagr < 0) {
+            el.className = "form-control text-danger";
+          } else {
+            el.className = "form-control text-success";
+          }
 
-        value = amount;
-        for (let i=1; i<=years; i++) {
-          value += value * cagr;
-          let li = document.createElement("li");
-          li.innerText = "Year "+ i +" = "+ CUR(value);
-          parentEl.appendChild(li);
+          value = amount;
+          for (let i=1; i<=years; i++) {
+            value += value * cagr;
+            let li = document.createElement("li");
+            li.innerText = "Year "+ i +" = "+ CUR(value);
+            parentEl.appendChild(li);
+          }
         }
       }
     }
@@ -123,26 +125,26 @@ const html = `
       <div class="tab-pane" id="cagr-pane" role="tabpanel" aria-labelledby="cagr-tab">
         <p>
         <label>Amount $</label><br>
-        <input class="form-control" type="text" id="amount" size="50" maxlength="12"/>
+        <input class="form-control" type="text" id="amount" maxlength="12"/>
         </p>
         <p>
           <label>Return $</label><br>
-          <input class="form-control" type="text" id="return" size="50" maxlength="12"/>
+          <input class="form-control" type="text" id="return" maxlength="12"/>
         </p>
         <p>
           <label>Years</label><br>
-          <input class="form-control" type="text" id="years" size="50" maxlength="2"/>
+          <input class="form-control" type="text" id="years" maxlength="2"/>
         </p>
         <p>
           <button class="btn btn-primary" type="button" onclick="calculate()">Calculate!</button>
         </p>
         <p>
           <label>ROI</label><br>
-          <input class="input-group-text text-muted" type="text" id="roi" size="50" readonly="readonly"/>
+          <input class="form-control text-muted" type="text" id="roi" readonly="readonly"/>
         </p>
         <p>
           <label>CAGR</label><br>
-          <input class="input-group-text text-muted" type="text" id="cagr" size="50" readonly="readonly"/>
+          <input class="form-control text-muted" type="text" id="cagr" readonly="readonly"/>
         </p>
         <p id="table" />
       </div>
