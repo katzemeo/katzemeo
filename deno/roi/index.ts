@@ -134,7 +134,7 @@ const html = `
     
       el = document.getElementById("years");
       if (el.value) {
-        let years = parseFloat(el.value);
+        let years = parseInt(el.value);
         if (years > 0 && years < 100) {
           const cagr = computeCAGR(amount, ret, years);
           el = document.getElementById("cagr");
@@ -157,6 +157,8 @@ const html = `
             li.innerText = "Year "+ i +" ("+ (start_year+i) +") = "+ CUR(value);
             parentEl.appendChild(li);
           }
+        } else {
+          alert("Invalid inputs!");
         }
       }
     }
@@ -182,7 +184,7 @@ const html = `
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
         <p>
           <label>Income / Revenue $</label><br>
-          <input class="form-control" type="text" id="income" maxlength="12"/>
+          <input class="form-control" type="number" step="1" pattern="^/d+$" id="income" maxlength="12"/>
         </p>
         <p>
           <div class="row align-items-center">
@@ -227,21 +229,21 @@ const html = `
       <div class="tab-pane" id="cagr-pane" role="tabpanel" aria-labelledby="cagr-tab">
         <p>
           <label>Amount $</label><br>
-          <input class="form-control" type="text" id="amount" maxlength="12"/>
+          <input class="form-control" type="number" step="1" pattern="^[-/d]/d*$" id="amount" maxlength="12"/>
         </p>
         <p>
           <label>Return $</label><br>
-          <input class="form-control" type="text" id="return" maxlength="12"/>
+          <input class="form-control" type="number" step="1" pattern="^[-/d]/d*$" id="return" maxlength="12"/>
         </p>
         <p>
           <div class="row align-items-center">
             <div class="col">
               <label>Years</label><br>
-              <input class="form-control" type="text" id="years" maxlength="2"/>              
+              <input class="form-control" type="number" min="1" max="99" step="1" pattern="[0-9]{2}" id="years" maxlength="2" required/>              
             </div>
             <div class="col">
               <label>Start Year</label><br>
-              <input class="form-control" type="text" id="start_year" maxlength="4"/>              
+              <input class="form-control" type="number" step="1" pattern="^/d+$" id="start_year" maxlength="4"/>              
             </div>
           </div>
         </p>
