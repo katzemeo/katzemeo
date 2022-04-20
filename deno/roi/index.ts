@@ -36,13 +36,14 @@ const html = `
     </style>
     <title id="title">ROI Calculator @katzemeo</title>
   </head>
-  <body>
+  <body oncontextmenu="return false;">
   <!-- Option 1: Bootstrap Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
     crossorigin="anonymous">
   </script>
   <script>
+    const NOW = new Date();
     const _percentFormat = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFactionDigits: 2 }).format;
     const PCT = function (value) { if (!isNaN(value)) { return _percentFormat(value); } return ""; };
     const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency", currencyDisplay: "symbol", currencySign: "accounting" }).format;
@@ -51,6 +52,18 @@ const html = `
       while (parent.lastChild && parent.childElementCount > header) {
         parent.removeChild(parent.lastChild);
       }
+    };
+
+    window.onload = function () {
+      let el;
+      el = document.getElementById("amount");
+      el.value = 100000;
+      el = document.getElementById("return");
+      el.value = 250000;
+      el = document.getElementById("years");
+      el.value = 10;
+      el = document.getElementById("start_year");
+      el.value = NOW.getFullYear();
     };
 
     // CAGR = ((end point / start point)^1/n) - 1
@@ -95,11 +108,16 @@ const html = `
             el.className = "form-control text-success";
           }
 
+          el = document.getElementById("start_year");
+          let start_year = parseInt(el.value);
+          if (isNaN(start_year) || start_year < 1) {
+            start_year = NOW.getFullYear();
+          }
           value = amount;
           for (let i=1; i<=years; i++) {
             value += value * cagr;
             let li = document.createElement("li");
-            li.innerText = "Year "+ i +" = "+ CUR(value);
+            li.innerText = "Year "+ i +" ("+ (start_year+i) +") = "+ CUR(value);
             parentEl.appendChild(li);
           }
         }
@@ -132,8 +150,16 @@ const html = `
           <input class="form-control" type="text" id="return" maxlength="12"/>
         </p>
         <p>
-          <label>Years</label><br>
-          <input class="form-control" type="text" id="years" maxlength="2"/>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>Years</label><br>
+              <input class="form-control" type="text" id="years" maxlength="2"/>              
+            </div>
+            <div class="col">
+              <label>Start Year</label><br>
+              <input class="form-control" type="text" id="start_year" maxlength="4"/>              
+            </div>
+          </div>
         </p>
         <p>
           <button class="btn btn-primary" type="button" onclick="calculate()">Calculate!</button>
