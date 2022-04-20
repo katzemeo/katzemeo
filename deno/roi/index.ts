@@ -48,6 +48,14 @@ const html = `
     const PCT = function (value) { if (!isNaN(value)) { return _percentFormat(value); } return ""; };
     const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency", currencyDisplay: "symbol", currencySign: "accounting" }).format;
 
+    const parseUTCDate = (dateStr) => {
+      const m = dateStr.match(/([0-9]+)[-/]([0-9]+)[-/]([0-9]+)/);
+      if (m && m.length === 4) {
+        return Date.UTC(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
+      }
+      throw new Error("Unable to parse invalid date!");
+    };
+
     const removeChildren = (parent, header = 0) => {
       while (parent.lastChild && parent.childElementCount > header) {
         parent.removeChild(parent.lastChild);
@@ -56,6 +64,11 @@ const html = `
 
     window.onload = function () {
       let el;
+      el = document.getElementById("from_date");
+      el.value = NOW.getFullYear() +"-"+ 1 +"-"+ 1;
+      el = document.getElementById("to_date");
+      el.value = NOW.getFullYear() +"-"+ (NOW.getMonth()+1) +"-"+ NOW.getDay();
+
       el = document.getElementById("amount");
       el.value = 100000;
       el = document.getElementById("return");
@@ -73,8 +86,39 @@ const html = `
       return cagr;
     }
     
+    function calculateIncome() {
+      let el = document.getElementById("income");
+      let income = parseFloat(el.value);
+      try {
+        el = document.getElementById("from_date");
+        const fromDate = parseUTCDate(el.value);
+        el = document.getElementById("to_date");
+        const toDate = parseUTCDate(el.value);
+        const delta = toDate - fromDate;
+        if (delta < 0) {
+          alert("Invalid inputs!");
+        } else {
+          let days = 1 + (delta / 1000 / 60 / 60 / 24);
+          el = document.getElementById("total_days");
+          el.value = days;
+
+          let average = income / days;
+          el = document.getElementById("daily_average");
+          el.value = CUR(average);
+
+          let annual_income = average * 365;
+          el = document.getElementById("monthly_income");
+          el.value = CUR(annual_income/12);
+          el = document.getElementById("annual_income");
+          el.value = CUR(annual_income);
+        }
+      } catch (error) {
+        alert("Invalid inputs!");
+      }
+    }
+
     // ROI = (Gain from Investment - Cost of Investment) / Cost of Investment
-    function calculate() {
+    function calculateROI() {
       let el = document.getElementById("amount");
       let amount = parseInt(el.value);
       el = document.getElementById("return");
@@ -128,6 +172,7 @@ const html = `
   <div class="container mt-5">
     <ul class="m-0 nav nav-fill nav-justified nav-tabs" id="myTab" role="tablist">
       <li class="nav-item" role="presentation" title="Return on Investments"> <button class="active nav-link" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"> <i class="fas fa-home"></i> Home </button> </li>
+      <li class="nav-item" role="presentation" title="Extrapolated income from date range"> <button class="nav-link" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"> <i class="fas fa-dollar-sign"></i> Income </button> </li>
       <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"> <i class="fas fa-percent"></i> CAGR </button> </li>
       <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"> <i class="fas fa-chart-line"></i> Cash Flow </button> </li>  
     </ul>
@@ -136,14 +181,60 @@ const html = `
         <p> Welcome! </p>
         <p> The following tools can help you measure Return on Investments and assess your potential Cash Flow risks. </p>
         <ul>
+          <li>Use the <a href="javascript:document.getElementById('income-tab').click()">Income</a> tab to help calculate the daily average as well as extrapolated monthly and annual income.</li>
           <li>Use the <a href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab to help calculate the expected annual growth rate for your investments.</li>
           <li>Use the <a href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab to check if you have sufficient cash flow for your situation.</li>
         </ul>
       </div>
+      <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
+        <p>
+          <label>Income / Revenue $</label><br>
+          <input class="form-control" type="text" id="income" maxlength="12"/>
+        </p>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>From Date</label><br>
+              <input class="form-control" type="text" id="from_date" maxlength="10" placeholder="yyyy-mm-dd"/>              
+            </div>
+            <div class="col">
+              <label>To Date</label><br>
+              <input class="form-control" type="text" id="to_date" maxlength="10" placeholder="yyyy-mm-dd"/>              
+            </div>
+          </div>
+        </p>
+        <p>
+          <button class="btn btn-primary" type="button" onclick="calculateIncome()">Calculate!</button>
+        </p>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>Total Days</label><br>
+              <input class="form-control" text-muted" type="text" id="total_days" readonly="readonly"/>              
+            </div>
+            <div class="col">
+              <label>Daily Average</label><br>
+              <input class="form-control" text-muted" type="text" id="daily_average" readonly="readonly"/>              
+            </div>
+          </div>
+        </p>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>Monthly Income</label><br>
+              <input class="form-control" text-muted" type="text" id="monthly_income" readonly="readonly"/>              
+            </div>
+            <div class="col">
+              <label>Annual Income</label><br>
+              <input class="form-control" text-muted" type="text" id="annual_income" readonly="readonly"/>              
+            </div>
+          </div>
+        </p>
+      </div>
       <div class="tab-pane" id="cagr-pane" role="tabpanel" aria-labelledby="cagr-tab">
         <p>
-        <label>Amount $</label><br>
-        <input class="form-control" type="text" id="amount" maxlength="12"/>
+          <label>Amount $</label><br>
+          <input class="form-control" type="text" id="amount" maxlength="12"/>
         </p>
         <p>
           <label>Return $</label><br>
@@ -162,7 +253,7 @@ const html = `
           </div>
         </p>
         <p>
-          <button class="btn btn-primary" type="button" onclick="calculate()">Calculate!</button>
+          <button class="btn btn-primary" type="button" onclick="calculateROI()">Calculate!</button>
         </p>
         <p>
           <label>ROI</label><br>
