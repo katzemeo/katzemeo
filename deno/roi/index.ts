@@ -48,14 +48,6 @@ const html = `
     const PCT = function (value) { if (!isNaN(value)) { return _percentFormat(value); } return ""; };
     const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency", currencyDisplay: "symbol", currencySign: "accounting" }).format;
 
-    const parseUTCDate = (dateStr) => {
-      const m = dateStr.match(/([0-9]+)[-/]([0-9]+)[-/]([0-9]+)/);
-      if (m && m.length === 4) {
-        return Date.UTC(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]));
-      }
-      throw new Error("Unable to parse invalid date!");
-    };
-
     const removeChildren = (parent, header = 0) => {
       while (parent.lastChild && parent.childElementCount > header) {
         parent.removeChild(parent.lastChild);
@@ -65,9 +57,9 @@ const html = `
     window.onload = function () {
       let el;
       el = document.getElementById("from_date");
-      el.value = NOW.getFullYear() +"-"+ 1 +"-"+ 1;
+      el.valueAsDate = new Date(NOW.getFullYear(), 0, 1);
       el = document.getElementById("to_date");
-      el.value = NOW.getFullYear() +"-"+ (NOW.getMonth()+1) +"-"+ NOW.getDay();
+      el.valueAsDate = NOW;
 
       el = document.getElementById("amount");
       el.value = 100000;
@@ -91,9 +83,9 @@ const html = `
       let income = parseFloat(el.value);
       try {
         el = document.getElementById("from_date");
-        const fromDate = parseUTCDate(el.value);
+        const fromDate = el.valueAsDate.getTime();
         el = document.getElementById("to_date");
-        const toDate = parseUTCDate(el.value);
+        const toDate = el.valueAsDate.getTime();
         const delta = toDate - fromDate;
         if (delta < 0) {
           alert("Invalid inputs!");
@@ -113,6 +105,7 @@ const html = `
           el.value = CUR(annual_income);
         }
       } catch (error) {
+        //console.log(error);
         alert("Invalid inputs!");
       }
     }
@@ -195,11 +188,11 @@ const html = `
           <div class="row align-items-center">
             <div class="col">
               <label>From Date</label><br>
-              <input class="form-control" type="text" id="from_date" maxlength="10" placeholder="yyyy-mm-dd"/>              
+              <input class="form-control" type="date" id="from_date"/>              
             </div>
             <div class="col">
               <label>To Date</label><br>
-              <input class="form-control" type="text" id="to_date" maxlength="10" placeholder="yyyy-mm-dd"/>              
+              <input class="form-control" type="date" id="to_date"/>              
             </div>
           </div>
         </p>
