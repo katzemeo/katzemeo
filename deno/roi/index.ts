@@ -27,7 +27,7 @@ const html = `
       .active {
         background-color: white
       }
-      #myTab {
+      #tab-nav {
         background-color: #dee2e6
       }
       .nav-link {
@@ -168,14 +168,14 @@ const html = `
     }
   </script>
 
-  <div class="container mt-5">
-    <ul class="m-0 nav nav-fill nav-justified nav-tabs" id="myTab" role="tablist">
-      <li class="nav-item" role="presentation" title="Introduction and Notes"> <button class="active nav-link" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"> <i class="fas fa-home"></i> Home</button> </li>
-      <li class="nav-item" role="presentation" title="Extrapolated Income from Date Range"> <button class="nav-link" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"> <i class="fas fa-dollar-sign"></i> Income</button> </li>
-      <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"> <i class="fas fa-percent"></i> CAGR</button> </li>
-      <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"> <i class="fas fa-chart-line"></i> Cash Flow</button> </li>  
+  <div class="container mt-3">
+    <ul class="m-0 nav nav-fill nav-justified nav-tabs" id="tab-nav" role="tablist">
+      <li class="nav-item" role="presentation" title="Introduction and Notes"> <button class="active nav-link" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"><nobr><i class="fas fa-home"></i> Home</button></nobr></li>
+      <li class="nav-item" role="presentation" title="Extrapolated Income from Date Range"> <button class="nav-link" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"><nobr><i class="fas fa-dollar-sign"></i> Income</button></nobr></li>
+      <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"><nobr><i class="fas fa-percent"></i> CAGR</button></nobr></li>
+      <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"><nobr><i class="fas fa-chart-line"></i> Cash Flow</nobr></button> </li>  
     </ul>
-    <div class="border-grey bg-white p-3 tab-content">
+    <div class="border-grey bg-white p-2 tab-content">
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
         <p class="fw-bold"> Welcome! </p>
         <p> The following tools can help you measure Return on Investments (ROI) and assess your potential Cash Flow risks. </p>
