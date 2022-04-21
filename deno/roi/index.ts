@@ -73,6 +73,18 @@ const html = `
       el.value = 7;
       el = document.getElementById("start_year");
       el.value = NOW.getFullYear();
+
+      const url = new URL(window.location.href);
+      let tab = url.searchParams.get("tab");
+      if (!tab && url.pathname.length > 1) {
+        tab = url.pathname.substring(1);
+      }
+      if (tab) {
+        const tabEl = document.getElementById(tab+"-tab");
+        if (tabEl) {
+          tabEl.click();
+        }
+      }
     };
 
     // CAGR = ((end point / start point)^1/n) - 1
