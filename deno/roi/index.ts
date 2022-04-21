@@ -87,7 +87,7 @@ const html = `
         el = document.getElementById("to_date");
         const toDate = el.valueAsDate.getTime();
         const delta = toDate - fromDate;
-        if (delta < 0) {
+        if (isNaN(income) || isNaN(delta) || delta < 0) {
           alert("Invalid inputs!");
         } else {
           let days = 1 + (delta / 1000 / 60 / 60 / 24);
@@ -173,13 +173,17 @@ const html = `
     </ul>
     <div class="border-grey bg-white p-3 tab-content">
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
-        <p> Welcome! </p>
+        <p class="fw-bold"> Welcome! </p>
         <p> The following tools can help you measure Return on Investments and assess your potential Cash Flow risks. </p>
         <ul>
           <li>Use the <a href="javascript:document.getElementById('income-tab').click()">Income</a> tab to help calculate the daily average as well as extrapolated monthly and annual income.</li>
           <li>Use the <a href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab to help calculate the expected annual growth rate for your investments.</li>
           <li>Use the <a href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab to check if you have sufficient cash flow for your situation.</li>
         </ul>
+        <p class="text-muted"> This simple tool is implemented as stateless single-page application (SPA) built primarily with JavaScript and Bootstrap 5 on the UI side and hosted at the end on
+        <a href="https://deno.com/deploy">Deno Deploy</a>.
+        If you are interested, you can see the details on <a href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">Github</a>.
+        </p>
       </div>
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
         <p>
