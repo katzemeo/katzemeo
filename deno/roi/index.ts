@@ -180,9 +180,9 @@ const html = `
           <li>Use the <a href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab to help calculate the expected annual growth rate for your investments.</li>
           <li>Use the <a href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab to check if you have sufficient cash flow for your situation.</li>
         </ul>
-        <p class="text-muted"> This simple tool is implemented as stateless single-page application (SPA) built primarily with JavaScript and Bootstrap 5 on the UI side and hosted at the end on
+        <p class="text-muted"> This simple tool is implemented as stateless single-page application (SPA) built primarily with JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
         <a href="https://deno.com/deploy">Deno Deploy</a>.
-        If you are interested, you can see the details on <a href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">Github</a>.
+        If interested, you can see the details on <a href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">Github</a>.
         </p>
       </div>
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
