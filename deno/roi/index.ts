@@ -35,6 +35,7 @@ const html = `
       }
     </style>
     <title id="title">ROI Calculator @katzemeo</title>
+    <link rel="icon" href="https://invest.npsolve.com/public/favicon.ico">
   </head>
   <body oncontextmenu="return false;">
   <!-- Option 1: Bootstrap Bundle with Popper -->
@@ -56,6 +57,9 @@ const html = `
 
     window.onload = function () {
       let el;
+
+      el = document.getElementById("income");
+      el.value = 1000;
       el = document.getElementById("from_date");
       el.valueAsDate = new Date(NOW.getFullYear(), 0, 1);
       el = document.getElementById("to_date");
@@ -66,7 +70,7 @@ const html = `
       el = document.getElementById("return");
       el.value = 250000;
       el = document.getElementById("years");
-      el.value = 10;
+      el.value = 7;
       el = document.getElementById("start_year");
       el.value = NOW.getFullYear();
     };
@@ -166,21 +170,21 @@ const html = `
 
   <div class="container mt-5">
     <ul class="m-0 nav nav-fill nav-justified nav-tabs" id="myTab" role="tablist">
-      <li class="nav-item" role="presentation" title="Return on Investments"> <button class="active nav-link" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"> <i class="fas fa-home"></i> Home </button> </li>
-      <li class="nav-item" role="presentation" title="Extrapolated income from date range"> <button class="nav-link" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"> <i class="fas fa-dollar-sign"></i> Income </button> </li>
-      <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"> <i class="fas fa-percent"></i> CAGR </button> </li>
-      <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"> <i class="fas fa-chart-line"></i> Cash Flow </button> </li>  
+      <li class="nav-item" role="presentation" title="Introduction and Notes"> <button class="active nav-link" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"> <i class="fas fa-home"></i> Home</button> </li>
+      <li class="nav-item" role="presentation" title="Extrapolated Income from Date Range"> <button class="nav-link" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"> <i class="fas fa-dollar-sign"></i> Income</button> </li>
+      <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"> <i class="fas fa-percent"></i> CAGR</button> </li>
+      <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"> <i class="fas fa-chart-line"></i> Cash Flow</button> </li>  
     </ul>
     <div class="border-grey bg-white p-3 tab-content">
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
         <p class="fw-bold"> Welcome! </p>
-        <p> The following tools can help you measure Return on Investments and assess your potential Cash Flow risks. </p>
+        <p> The following tools can help you measure Return on Investments (ROI) and assess your potential Cash Flow risks. </p>
         <ul>
           <li>Use the <a href="javascript:document.getElementById('income-tab').click()">Income</a> tab to help calculate the daily average as well as extrapolated monthly and annual income.</li>
           <li>Use the <a href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab to help calculate the expected annual growth rate for your investments.</li>
           <li>Use the <a href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab to check if you have sufficient cash flow for your situation.</li>
         </ul>
-        <p class="text-muted"> This simple tool is implemented as stateless single-page application (SPA) built primarily with JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
+        <p class="text-muted"> This simple tool is implemented as stateless single-page application (SPA) built primarily with HTML 5, JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
         <a href="https://deno.com/deploy">Deno Deploy</a>.
         If interested, you can see the details on <a href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">Github</a>.
         </p>
