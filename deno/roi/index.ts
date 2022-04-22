@@ -215,7 +215,7 @@ const html = `
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
         <p>
           <label>Income / Revenue $</label><br>
-          <input class="form-control" type="number" step="1" pattern="^/d+$" id="income" maxlength="12"/>
+          <input class="form-control" type="number" step="1000" pattern="^/d+$" id="income" maxlength="12"/>
         </p>
         <p>
           <div class="row align-items-center">
@@ -260,11 +260,11 @@ const html = `
       <div class="tab-pane" id="cagr-pane" role="tabpanel" aria-labelledby="cagr-tab">
         <p>
           <label>Amount $</label><br>
-          <input class="form-control" type="number" step="1" pattern="^[-/d]/d*$" id="amount" maxlength="12"/>
+          <input class="form-control" type="number" step="1000" pattern="^[-/d]/d*$" id="amount" maxlength="12"/>
         </p>
         <p>
           <label>Return $</label><br>
-          <input class="form-control" type="number" step="1" pattern="^[-/d]/d*$" id="return" maxlength="12"/>
+          <input class="form-control" type="number" step="1000" pattern="^[-/d]/d*$" id="return" maxlength="12"/>
         </p>
         <p>
           <div class="row align-items-center">
@@ -274,7 +274,7 @@ const html = `
             </div>
             <div class="col">
               <label>Start Year</label><br>
-              <input class="form-control" type="number" step="1" pattern="^/d+$" id="start_year" maxlength="4"/>              
+              <input class="form-control" type="number" min="0" max="2999" step="1" pattern="^/d+$" id="start_year" maxlength="4"/>              
             </div>
           </div>
         </p>
@@ -292,8 +292,88 @@ const html = `
         <p id="table" />
       </div>
       <div class="tab-pane" id="cashflow-pane" role="tabpanel" aria-labelledby="cashflow-tab">
-        <p> This is the Cash Flow tab! </p>
-        <p> TODO - Implement feature to dynamically build revenue and expense models and analyze probability of crash or flow... </p>
+        <div class="accordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="header-income">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-income" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                Income
+              </button>
+            </h2>
+            <div id="collapse-income" class="accordion-collapse collapse show" aria-labelledby="header-income">
+              <div class="accordion-body">
+                <p>
+                  <div class="row align-items-center">
+                    <div class="col">
+                      <label>Employment $</label><br>
+                      <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="income_employment"/>
+                    </div>
+                    <div class="col">
+                      <label>Frequency</label><br>
+                      <input class="form-control" value="1" type="number" min="1" max="1000" step="1" pattern="^/d+$" id="income_employment_freq"/>
+                    </div>
+                    <div class="col">
+                      <label>Period</label><br>
+                      <select class="form-select form-select-sm" id="income_employment_period">
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="month" selected>Month</option>
+                        <option value="year">Year</option>
+                      </select>
+                    </div>
+                  </div>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="header-fixed-expenses">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-fixed-expenses" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
+                Fixed Expenses
+              </button>
+            </h2>
+            <div id="collapse-fixed-expenses" class="accordion-collapse collapse" aria-labelledby="header-fixed-expenses">
+              <div class="accordion-body">
+                <p>
+                  <div class="row align-items-center">
+                    <div class="col">
+                      <label>Rent or mortgage payment $</label><br>
+                      <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
+                    </div>
+                    <div class="col">
+                      <label>Frequency</label><br>
+                      <input class="form-control" value="1" type="number" min="1" max="1000" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
+                    </div>
+                    <div class="col">
+                      <label>Period</label><br>
+                      <select class="form-select form-select-sm" id="fixed_expenses_rent_or_mortgage_period">
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="month" selected>Month</option>
+                        <option value="year">Year</option>
+                      </select>
+                    </div>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <br/>
+        <p>
+          <button class="btn btn-primary" type="button" onclick="calculateCashflow()">Calculate!</button>
+        </p>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>Total Monthly Income</label><br>
+              <input class="form-control" text-muted" type="text" id="total_monthly_income" readonly="readonly"/>              
+            </div>
+            <div class="col">
+              <label>Total Monthly Expenses</label><br>
+              <input class="form-control" text-muted" type="text" id="total_monthly_expenses" readonly="readonly"/>              
+            </div>
+          </div>
+        </p>
       </div>
     </div>
   </div>
