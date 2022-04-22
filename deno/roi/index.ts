@@ -55,26 +55,37 @@ const html = `
       }
     };
 
+    const getFloatParam = (url, name, defaultValue) => {
+      let value = url.searchParams.get(name);
+      if (value) {
+        value = parseFloat(value);
+        if (!isNaN(value)) {
+          return value;
+        }
+      }
+      return defaultValue;
+    };
+
     window.onload = function () {
+      const url = new URL(window.location.href);
       let el;
 
       el = document.getElementById("income");
-      el.value = 1000;
+      el.value = getFloatParam(url, "income", 1000);
       el = document.getElementById("from_date");
       el.valueAsDate = new Date(NOW.getFullYear(), 0, 1);
       el = document.getElementById("to_date");
       el.valueAsDate = NOW;
 
       el = document.getElementById("amount");
-      el.value = 100000;
+      el.value = getFloatParam(url, "amount", 100000);
       el = document.getElementById("return");
-      el.value = 250000;
+      el.value = getFloatParam(url, "return", 250000);
       el = document.getElementById("years");
-      el.value = 7;
+      el.value = getFloatParam(url, "years", 7);
       el = document.getElementById("start_year");
       el.value = NOW.getFullYear();
 
-      const url = new URL(window.location.href);
       let tab = url.searchParams.get("tab");
       if (!tab && url.pathname.length > 1) {
         tab = url.pathname.substring(1);
@@ -129,9 +140,9 @@ const html = `
     // ROI = (Gain from Investment - Cost of Investment) / Cost of Investment
     function calculateROI() {
       let el = document.getElementById("amount");
-      let amount = parseInt(el.value);
+      let amount = parseFloat(el.value);
       el = document.getElementById("return");
-      let ret = parseInt(el.value);
+      let ret = parseFloat(el.value);
       if (isNaN(amount) || amount <= 0 || isNaN(ret) || ret < 0) {
         alert("Invalid inputs!");
         return;
@@ -150,7 +161,7 @@ const html = `
     
       el = document.getElementById("years");
       if (el.value) {
-        let years = parseInt(el.value);
+        let years = parseFloat(el.value);
         if (years > 0 && years < 100) {
           const cagr = computeCAGR(amount, ret, years);
           el = document.getElementById("cagr");
@@ -162,7 +173,7 @@ const html = `
           }
 
           el = document.getElementById("start_year");
-          let start_year = parseInt(el.value);
+          let start_year = parseFloat(el.value);
           if (isNaN(start_year) || start_year < 1) {
             start_year = NOW.getFullYear();
           }
