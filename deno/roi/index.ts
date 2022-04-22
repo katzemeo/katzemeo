@@ -313,7 +313,7 @@ const html = `
                     </div>
                     <div class="col">
                       <label>Period</label><br>
-                      <select class="form-select form-select-sm" id="income_employment_period">
+                      <select class="form-select form-select" id="income_employment_period">
                         <option value="day">Day</option>
                         <option value="week">Week</option>
                         <option value="month" selected>Month</option>
@@ -340,20 +340,48 @@ const html = `
                       <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
                     </div>
                     <div class="col">
-                      <label>Frequency</label><br>
-                      <input class="form-control" value="1" type="number" min="1" max="1000" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
+                      <label>Frequency for Time Period</label>
+                      <div class="row align-items-center">
+                        <div class="col-auto">
+                          <input class="form-control form-control" value="1" type="number" min="1" max="1000" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
+                        </div>
+                        <div class="col-auto">
+                          <select class="form-select form-select" id="fixed_expenses_rent_or_mortgage_period">
+                            <option value="day">Day</option>
+                            <option value="week">Week</option>
+                            <option value="month" selected>Month</option>
+                            <option value="year">Year</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </p>
+                <p>
+                  <div class="row align-items-center">
+                    <div class="col">
+                      <label>Property taxes and/or condo fees $</label><br>
+                      <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
                     </div>
                     <div class="col">
-                      <label>Period</label><br>
-                      <select class="form-select form-select-sm" id="fixed_expenses_rent_or_mortgage_period">
-                        <option value="day">Day</option>
-                        <option value="week">Week</option>
-                        <option value="month" selected>Month</option>
-                        <option value="year">Year</option>
-                      </select>
+                      <div class="row align-items-center">
+                        <div class="col-auto">
+                          <label>Frequency</label>
+                          <input class="form-control form-control" value="1" type="number" min="1" max="1000" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee_freq"/>
+                        </div>
+                        <div class="col-auto">
+                          <label>Period</label>
+                          <select class="form-select form-select" id="fixed_expenses_property_tax_or_condo_fee_period">
+                            <option value="day">Day</option>
+                            <option value="week">Week</option>
+                            <option value="month" selected>Month</option>
+                            <option value="year">Year</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                  </p>
-                </div>
+                  </div>
+                </p>
               </div>
             </div>
           </div>
