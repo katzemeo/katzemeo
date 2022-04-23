@@ -1,5 +1,29 @@
+// Monthly budget for a single individual
+const CASH_FLOW_SINGLE = {
+  income: [
+    { employment: "Employment", freq: {every: 1, period: "month"}, value: 4000 },
+    { bonuses: "Bonuses", freq: {every: 1, period: "year"}, value: 2000 },
+    { other: "Other", freq: {every: 1, period: "month"} },
+  ],
+  fixed_expenses: [
+    { mortgage: "Mortgage payment", freq: {every: 1, period: "month"}, value: 2000 },
+    { car: "Car payment", freq: {every: 1, period: "month"}, value: 43000/72 },
+    { hydro: "Hydro", freq: {every: 1, period: "month"}, value: 100 },
+    { water: "Water", freq: {every: 1, period: "month"}, value: 50 },
+    { heating_cooling: "Heating and Cooling", freq: {every: 1, period: "month"}, value: 85 },
+    { cell_phone: "Cell Phone", freq: {every: 1, period: "month"}, value: 50 },
+    { gas: "Gas", freq: {every: 1, period: "month"}, value: 200 },
+    { insurance: "Insurance (Home and Auto)", freq: {every: 1, period: "month"}, value: 120 },
+    { internet: "Internet", freq: {every: 1, period: "month"}, value: 100 },
+  ],
+  variable_expenses: [
+    { food: "Food", freq: {every: 1, period: "month"}, value: 200 },
+    { entertainment: "Entertainment", freq: {every: 1, period: "month"}, value: 90 },
+  ],
+};
+
 // Monthly budget based on https://itools-ioutils.fcac-acfc.gc.ca/yft-vof/eng/ieb-4-3.aspx
-const CASH_FLOW_TEMPLATE = {
+const CASH_FLOW_DEFAULT = {
   income: [
     { employment: "Employment", freq: {every: 2, period: "week"}, value: 2000 },
     { bonuses: "Bonuses", freq: {every: 1, period: "year"}, value: 5000 },
@@ -35,20 +59,21 @@ function getCaption(entry: any) {
 }
 
 export const getCashFlow = (profile: string = "default") => {
+  let template = profile == "single" ? CASH_FLOW_SINGLE : CASH_FLOW_DEFAULT;
   return {
-    income_sources: CASH_FLOW_TEMPLATE.income.map((e: any) => ({
+    income_sources: template.income.map((e: any) => ({
       name: getName(e),
       caption: getCaption(e),
       freq: e.freq,
       value: e.value,
     })),
-    fixed_expenses: CASH_FLOW_TEMPLATE.fixed_expenses.map((e: any) => ({
+    fixed_expenses: template.fixed_expenses.map((e: any) => ({
       name: getName(e),
       caption: getCaption(e),
       freq: e.freq,
       value: e.value,
     })),
-    variable_expenses: CASH_FLOW_TEMPLATE.variable_expenses.map((e: any) => ({
+    variable_expenses: template.variable_expenses.map((e: any) => ({
       name: getName(e),
       caption: getCaption(e),
       freq: e.freq,

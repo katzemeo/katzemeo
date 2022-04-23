@@ -53,6 +53,7 @@ const html = `
     const _percentFormat = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFactionDigits: 2 }).format;
     const PCT = function (value) { if (!isNaN(value)) { return _percentFormat(value); } return ""; };
     const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency", currencyDisplay: "symbol", currencySign: "accounting" }).format;
+    var _profile = null;
     var _cash_flow_template = null;
 
     const removeChildren = (parent, header = 0) => {
@@ -102,7 +103,7 @@ const html = `
       el.className = "form-control";
       el.type = entry.type ?? "number";
       if (entry.value !== undefined) {
-        el.value = entry.value;
+        el.value = entry.value.toFixed(2);
       }
       el.min = entry.min ?? 0;
       if (entry.max !== undefined) {
@@ -184,7 +185,7 @@ const html = `
 
     const getCashflowTemplate = () => {
       const url = "/cashflow/template";
-      fetch(url, {
+      fetch(_profile ? url + "?profile=" + _profile : url, {
         method: "GET",
         headers: JSON_HEADERS,
       }).then((response) =>
@@ -205,10 +206,11 @@ const html = `
     };
 
     window.onload = function () {
-      configureTabs();
       const url = new URL(window.location.href);
-      let el;
+      _profile = url.searchParams.get("profile");
+      configureTabs();
 
+      let el;
       el = document.getElementById("income");
       el.value = getFloatParam(url, "income", 1000);
       el = document.getElementById("from_date");
@@ -557,12 +559,14 @@ const html = `
 </html>`
 
 async function handleRequest(request: Request): Promise<Response> {
-  const { pathname } = new URL(request.url);
+  const url = new URL(request.url);
+  const pathname = url.pathname;
   try {
     if (pathname == "/ping") {
       return new Response(`OK`);
     } else if (pathname == "/cashflow/template") {
-      return new Response(JSON.stringify(getCashFlow()), { headers: { 'Content-Type': 'application/json' } });
+      const profile: any = url.searchParams.get("profile");
+      return new Response(JSON.stringify(getCashFlow(profile)), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
   } catch (error) {
