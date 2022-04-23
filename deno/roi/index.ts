@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.128.0/http/server.ts'
 import { open } from "https://deno.land/x/open/index.ts";
+import { getCashFlow } from './cash_flow.ts';
 
 const html = `
 <!DOCTYPE html>
@@ -44,10 +45,15 @@ const html = `
     crossorigin="anonymous">
   </script>
   <script>
+    const JSON_HEADERS = {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    };
     const NOW = new Date();
     const _percentFormat = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFactionDigits: 2 }).format;
     const PCT = function (value) { if (!isNaN(value)) { return _percentFormat(value); } return ""; };
     const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency", currencyDisplay: "symbol", currencySign: "accounting" }).format;
+    var _cash_flow_template = null;
 
     const removeChildren = (parent, header = 0) => {
       while (parent.lastChild && parent.childElementCount > header) {
@@ -66,7 +72,126 @@ const html = `
       return defaultValue;
     };
 
+    const configureTabs = () => {
+      let tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+      tabs.forEach((tab) => {
+        tab.addEventListener('show.bs.tab', function (event) {
+          if (event.target && event.target.name === "cashflow") {
+            if (!_cash_flow_template) {
+              getCashflowTemplate();
+            }
+          }
+          //event.target // newly activated tab
+          //event.relatedTarget // previous active tab
+        });
+      });
+    };
+
+    /*
+    <p>
+    <div class="row align-items-center gx-1">
+      <div class="col">
+        <label>Rent or mortgage payment $</label><br>
+        <div class="row align-items-center gx-1">
+          <div class="col-5">
+            <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
+          </div>
+          <div class="col-auto" title="Frequency">
+            <input class="form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
+          </div>
+          <div class="col-auto" title="Period">
+            <select class="form-select" id="fixed_expenses_rent_or_mortgage_period">
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month" selected>Month</option>
+              <option value="year">Year</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    </p>
+    */
+
+    const createDiv = (className, title=null) => {
+      const el = document.createElement("div");
+      el.className = className;
+      if (title) {
+        el.title = title;
+      }
+      return el;
+    };
+
+    const createValueControl = (entry) => {
+      const el = document.createElement("input");
+      el.id = entry.name;
+      el.className = "form-control";
+      el.type = entry.type ?? "number";
+      if (entry.value !== undefined) {
+        el.value = entry.value;
+      }
+      el.min = entry.min ?? 0;
+      if (entry.max !== undefined) {
+        el.max = entry.max;
+      }
+      if (entry.step) {
+        el.step = entry.step;
+      }
+      if (entry.pattern) {
+        el.pattern = entry.pattern;
+      }
+      return el;
+    };
+
+    const buildCashflowUI = () => {
+      let group = "variable_expenses";
+      const groupEl = document.getElementById(group);
+      _cash_flow_template[group].forEach((entry) => {
+        const p = document.createElement("p");
+        const divRow = createDiv("row align-items-center gx-1");
+        const divCol = createDiv("col");
+        const label = document.createElement("label");
+        label.innerText = entry.caption +" $";
+        label.appendChild(document.createElement("br"));
+        divCol.appendChild(label);
+
+        const divRowEntry = createDiv("row align-items-center gx-1");
+        const divValue = createDiv("col-5");
+        divValue.appendChild(createValueControl(entry));
+        divRowEntry.appendChild(divValue);
+        divCol.appendChild(divRowEntry);
+
+        divRow.appendChild(divCol);
+        p.appendChild(divRow);
+        groupEl.appendChild(p);
+      });
+    };
+
+    const getCashflowTemplate = () => {
+      const url = "/cashflow/template";
+      fetch(url, {
+        method: "GET",
+        headers: JSON_HEADERS,
+      }).then((response) =>
+        response.json().then((data) => ({
+          data: data,
+          status: response.status,
+        })).then((res) => {
+          if (res.status == 200) {
+            _cash_flow_template = res.data;
+            buildCashflowUI();
+            //alert(JSON.stringify(_cash_flow_template));
+          } else {
+            console.log("Unexpected response", res.status);
+          }
+        }).catch((error) => {
+          console.log("Unexpected error", error);
+        })
+      );
+    };
+
     window.onload = function () {
+      configureTabs();
       const url = new URL(window.location.href);
       let el;
 
@@ -104,7 +229,7 @@ const html = `
       //console.log(cagr);
       return cagr;
     }
-    
+
     function calculateIncome() {
       let el = document.getElementById("income");
       let income = parseFloat(el.value);
@@ -204,10 +329,10 @@ const html = `
 
   <div class="container mt-3">
     <ul class="m-0 nav nav-fill nav-justified nav-tabs" id="tab-nav" role="tablist">
-      <li class="nav-item" role="presentation" title="Introduction and Notes"> <button class="active nav-link" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"><nobr><i class="fas fa-home"></i> Home</button></nobr></li>
-      <li class="nav-item" role="presentation" title="Extrapolated Income from Date Range"> <button class="nav-link" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"><nobr><i class="fas fa-dollar-sign"></i> Income</button></nobr></li>
-      <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"><nobr><i class="fas fa-percent"></i> CAGR</button></nobr></li>
-      <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"><nobr><i class="fas fa-chart-line"></i> Cash Flow</nobr></button> </li>  
+      <li class="nav-item" role="presentation" title="Introduction and Notes"> <button class="active nav-link" name="home" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"><nobr><i class="fas fa-home"></i> Home</button></nobr></li>
+      <li class="nav-item" role="presentation" title="Extrapolated Income from Date Range"> <button class="nav-link" name="income" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"><nobr><i class="fas fa-dollar-sign"></i> Income</button></nobr></li>
+      <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" name="cagr" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"><nobr><i class="fas fa-percent"></i> CAGR</button></nobr></li>
+      <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" name="cashflow" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"><nobr><i class="fas fa-chart-line"></i> Cash Flow</nobr></button> </li>  
     </ul>
     <div class="border-grey bg-white p-2 tab-content">
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
@@ -416,14 +541,15 @@ const html = `
               </div>
             </div>
           </div>
-          <div class="accordion-item" id="variable-expenses">
+          <div class="accordion-item">
             <h2 class="accordion-header" id="header-variable-expenses">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-variable-expenses" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
                 Variable Expenses
               </button>
             </h2>
             <div id="collapse-variable-expenses" class="accordion-collapse collapse" aria-labelledby="header-variable-expenses">
-              <div class="accordion-body p-1">
+              <div id="variable_expenses" class="accordion-body p-1">
+
               </div>
             </div>
           </div>
@@ -455,6 +581,8 @@ async function handleRequest(request: Request): Promise<Response> {
   try {
     if (pathname == "/ping") {
       return new Response(`OK`);
+    } else if (pathname == "/cashflow/template") {
+      return new Response(JSON.stringify(getCashFlow()), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
   } catch (error) {
