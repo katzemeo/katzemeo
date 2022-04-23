@@ -302,7 +302,7 @@ const html = `
             <div id="collapse-income" class="accordion-collapse collapse show" aria-labelledby="header-income">
               <div class="accordion-body p-1">
                 <p>
-                  <div class="row align-items-center">
+                  <div class="row align-items-center gx-1">
                     <div class="col">
                       <label>Employment $</label><br>
                       <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="income_employment"/>
@@ -334,14 +334,14 @@ const html = `
             <div id="collapse-fixed-expenses" class="accordion-collapse collapse" aria-labelledby="header-fixed-expenses">
               <div class="accordion-body p-1">
                 <p>
-                  <div class="row align-items-center">
+                  <div class="row align-items-center gx-1">
                     <div class="col">
                       <label>Rent or mortgage payment $</label><br>
                       <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
                     </div>
                     <div class="col">
                       <label>Frequency for Time Period</label>
-                      <div class="row align-items-center">
+                      <div class="row align-items-center gx-1">
                         <div class="col-auto">
                           <input class="form-control form-control" value="1" type="number" min="1" max="1000" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
                         </div>
@@ -361,8 +361,8 @@ const html = `
                   <div class="row align-items-center">
                     <div class="col">
                       <label>Property taxes and/or condo fees $</label><br>
-                      <div class="row align-items-center">
-                        <div class="col-auto">
+                      <div class="row align-items-center gx-1">
+                        <div class="col-sm-auto col-md-5">
                           <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
                         </div>
                         <div class="col-auto">
@@ -384,8 +384,8 @@ const html = `
                   <div class="row align-items-center">
                     <div class="col">
                       <label>Home insurance $</label><br>
-                      <div class="row align-items-center">
-                        <div class="col-auto">
+                      <div class="row align-items-center gx-1">
+                        <div class="col-sm-auto col-md-5">
                           <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
                         </div>
                         <div class="col-auto">
