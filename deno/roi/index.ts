@@ -195,6 +195,7 @@ const html = `
         })).then((res) => {
           if (res.status == 200) {
             _cash_flow_template = res.data;
+            //console.log(_cash_flow_template);
             buildCashflowUI();
           } else {
             console.log("Unexpected response", res.status);
@@ -380,6 +381,11 @@ const html = `
       el = document.getElementById("total_monthly_expense");
       el.value = CUR(yearlyExpense/12);
 
+      el = document.getElementById("total_annual_income");
+      el.value = CUR(yearlyIncome);
+      el = document.getElementById("total_annual_expense");
+      el.value = CUR(yearlyExpense);
+
       let parentEl = document.getElementById("cashflow_net");
       removeChildren(parentEl);
 
@@ -548,6 +554,18 @@ const html = `
             <div class="col">
               <label>Monthly Expenses</label><br>
               <input class="form-control" text-muted" type="text" id="total_monthly_expense" readonly="readonly"/>              
+            </div>
+          </div>
+        </p>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>Annual Income</label><br>
+              <input class="form-control" text-muted" type="text" id="total_annual_income" readonly="readonly"/>              
+            </div>
+            <div class="col">
+              <label>Annual Expenses</label><br>
+              <input class="form-control" text-muted" type="text" id="total_annual_expense" readonly="readonly"/>              
             </div>
           </div>
         </p>
