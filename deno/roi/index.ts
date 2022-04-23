@@ -87,32 +87,6 @@ const html = `
       });
     };
 
-    /*
-    <p>
-    <div class="row align-items-center gx-1">
-      <div class="col">
-        <label>Rent or mortgage payment $</label><br>
-        <div class="row align-items-center gx-1">
-          <div class="col-5">
-            <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
-          </div>
-          <div class="col-auto" title="Frequency">
-            <input class="form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
-          </div>
-          <div class="col-auto" title="Period">
-            <select class="form-select" id="fixed_expenses_rent_or_mortgage_period">
-              <option value="day">Day</option>
-              <option value="week">Week</option>
-              <option value="month" selected>Month</option>
-              <option value="year">Year</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-    </p>
-    */
-
     const createDiv = (className, title=null) => {
       const el = document.createElement("div");
       el.className = className;
@@ -122,7 +96,6 @@ const html = `
       return el;
     };
 
-    // <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
     const createValueControl = (entry) => {
       const el = document.createElement("input");
       el.id = entry.name;
@@ -144,7 +117,6 @@ const html = `
       return el;
     };
 
-    // <input class="form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
     const createFreqControl = (entry) => {
       const el = document.createElement("input");
       el.id = entry.name +"_freq";
@@ -167,14 +139,6 @@ const html = `
       return el;
     };
 
-    /*
-    <select class="form-select" id="fixed_expenses_rent_or_mortgage_period">
-    <option value="day">Day</option>
-    <option value="week">Week</option>
-    <option value="month" selected>Month</option>
-    <option value="year">Year</option>
-    </select>
-    */
     const createPeriodSelect = (entry) => {
       const el = document.createElement("select");
       el.id = entry.name +"_period";
@@ -231,7 +195,6 @@ const html = `
           if (res.status == 200) {
             _cash_flow_template = res.data;
             buildCashflowUI();
-            //alert(JSON.stringify(_cash_flow_template));
           } else {
             console.log("Unexpected response", res.status);
           }
@@ -274,7 +237,14 @@ const html = `
       }
     };
 
-    // CAGR = ((end point / start point)^1/n) - 1
+    function setTextColour(el, value) {
+      if (value < 0) {
+        el.className += " text-danger";
+      } else {
+        el.className += " text-success";
+      }
+    }
+
     function computeCAGR(start, end, n) {
       let cagr = Math.pow((end/start), 1/n) - 1;
       //console.log(cagr);
@@ -313,7 +283,6 @@ const html = `
       }
     }
 
-    // ROI = (Gain from Investment - Cost of Investment) / Cost of Investment
     function calculateROI() {
       let el = document.getElementById("amount");
       let amount = parseFloat(el.value);
@@ -366,15 +335,55 @@ const html = `
       }
     }
 
+    function calculateGroupYearly(group) {
+      let total = 0;
+      _cash_flow_template[group].forEach((entry) => {
+        let el = document.getElementById(entry.name);
+        if (el.value) {
+          let freqEl = document.getElementById(entry.name+"_freq");
+          let periodEl = document.getElementById(entry.name+"_period");
+          const value = parseFloat(el.value);
+          const freq = parseInt(freqEl.value);
+          let factor = 1;
+          if (periodEl.value === "day") {
+            factor = 365 / freq;
+          } else if (periodEl.value === "week") {
+            factor = 52 / freq;
+          } else if (periodEl.value === "month") {
+            factor = 12 / freq;
+          }
+          total += isNaN(value) ? 0 : value * factor;
+        }
+      });
+      return total;
+    }
+
     function calculateCashflow() {
-      let monthlyIncome = 0;
-      let monthlyExpense = 0;
+      let yearlyIncome = calculateGroupYearly("income_sources");
+      let yearlyExpense = calculateGroupYearly("fixed_expenses") + calculateGroupYearly("variable_expenses");
       let el;
 
       el = document.getElementById("total_monthly_income");
-      el.value = CUR(monthlyIncome);
+      el.value = CUR(yearlyIncome/12);
       el = document.getElementById("total_monthly_expense");
-      el.value = CUR(monthlyExpense);
+      el.value = CUR(yearlyExpense/12);
+
+      let parentEl = document.getElementById("cashflow_net");
+      removeChildren(parentEl);
+
+      const yearly_net = yearlyIncome - yearlyExpense;
+      let li = document.createElement("li");
+      li.innerText = "Daily Net = "+ CUR(yearly_net/365);
+      setTextColour(li, yearly_net);
+      parentEl.appendChild(li);
+      li = document.createElement("li");
+      li.innerText = "Monthly Net = "+ CUR(yearly_net/12);
+      setTextColour(li, yearly_net);
+      parentEl.appendChild(li);
+      li = document.createElement("li");
+      li.innerText = "Yearly Net = "+ CUR(yearly_net);
+      setTextColour(li, yearly_net);
+      parentEl.appendChild(li);
     }
   </script>
 
@@ -530,6 +539,7 @@ const html = `
             </div>
           </div>
         </p>
+        <p id="cashflow_net" />
       </div>
     </div>
   </div>
