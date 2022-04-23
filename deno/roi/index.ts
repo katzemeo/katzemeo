@@ -338,13 +338,13 @@ const html = `
                     <div class="col">
                       <label>Rent or mortgage payment $</label><br>
                       <div class="row align-items-center gx-1">
-                        <div class="col-xs-auto col-sm-3 col-md-4 col-lg-6">
+                        <div class="col-6">
                           <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
                         </div>
-                        <div class="col-auto">
+                        <div class="col-auto" title="Frequency">
                           <input class="form-control form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
                         </div>
-                        <div class="col-auto">
+                        <div class="col-auto" title="Period">
                           <select class="form-select form-select" id="fixed_expenses_rent_or_mortgage_period">
                             <option value="day">Day</option>
                             <option value="week">Week</option>
@@ -361,8 +361,8 @@ const html = `
                     <div class="col">
                       <label>Property taxes and/or condo fees $</label><br>
                       <div class="row align-items-center gx-1">
-                        <div class="col-xs-auto col-sm-3 col-md-4 col-lg-6">
-                          <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
+                        <div class="col-6">
+                          <input class="form-control" type="number" min="0" max="9999" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
                         </div>
                         <div class="col-auto">
                           <input class="form-control form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee_freq"/>
@@ -384,7 +384,7 @@ const html = `
                     <div class="col">
                       <label>Home insurance $</label><br>
                       <div class="row align-items-center gx-1">
-                        <div class="col-xs-auto col-sm-3 col-md-4 col-lg-6">
+                        <div class="col-6">
                           <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
                         </div>
                         <div class="col-auto">
@@ -405,6 +405,17 @@ const html = `
               </div>
             </div>
           </div>
+          <div class="accordion-item" id="variable-expenses">
+            <h2 class="accordion-header" id="header-variable-expenses">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-variable-expenses" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
+                Variable Expenses
+              </button>
+            </h2>
+            <div id="collapse-variable-expenses" class="accordion-collapse collapse" aria-labelledby="header-variable-expenses">
+              <div class="accordion-body p-1">
+              </div>
+            </div>
+          </div>
         </div>
         <br/>
         <p>
@@ -413,11 +424,11 @@ const html = `
         <p>
           <div class="row align-items-center">
             <div class="col">
-              <label>Total Monthly Income</label><br>
+              <label>Monthly Income</label><br>
               <input class="form-control" text-muted" type="text" id="total_monthly_income" readonly="readonly"/>              
             </div>
             <div class="col">
-              <label>Total Monthly Expenses</label><br>
+              <label>Monthly Expenses</label><br>
               <input class="form-control" text-muted" type="text" id="total_monthly_expenses" readonly="readonly"/>              
             </div>
           </div>
