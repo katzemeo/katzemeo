@@ -18,7 +18,7 @@ const CASH_FLOW_TEMPLATE = {
   variable_expenses: [
     { groceries: "Groceries", freq: {every: 1, period: "week"}, value: 100 },
     { eating_out: "Eating out", freq: {every: 1, period: "month"}, value: 200 },
-    { household: "Household expenses (cleaning, maintenance, repairs, furniture)", freq: {every: 1, period: "year"}, value: 1000 },
+    { household: "Household expenses (maintenance, furniture, etc.)", freq: {every: 1, period: "year"}, value: 1000 },
     { car_related: "Car repairs, gas, etc.", freq: {every: 1, period: "year"}, value: 2500 },
     { computer_related: "Computer equipment and office supplies", freq: {every: 1, period: "year"}, value: 500 },
     { pets_related: "Pets", freq: {every: 1, period: "week"}, value: 20 },
@@ -36,15 +36,17 @@ function getCaption(entry: any) {
 
 export const getCashFlow = (profile: string = "default") => {
   return {
-    income: CASH_FLOW_TEMPLATE.income.map((e: any) => ({
+    income_sources: CASH_FLOW_TEMPLATE.income.map((e: any) => ({
       name: getName(e),
       caption: getCaption(e),
       freq: e.freq,
+      value: e.value,
     })),
     fixed_expenses: CASH_FLOW_TEMPLATE.fixed_expenses.map((e: any) => ({
       name: getName(e),
       caption: getCaption(e),
       freq: e.freq,
+      value: e.value,
     })),
     variable_expenses: CASH_FLOW_TEMPLATE.variable_expenses.map((e: any) => ({
       name: getName(e),

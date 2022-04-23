@@ -122,6 +122,7 @@ const html = `
       return el;
     };
 
+    // <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
     const createValueControl = (entry) => {
       const el = document.createElement("input");
       el.id = entry.name;
@@ -143,27 +144,77 @@ const html = `
       return el;
     };
 
+    // <input class="form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
+    const createFreqControl = (entry) => {
+      const el = document.createElement("input");
+      el.id = entry.name +"_freq";
+      el.className = "form-control";
+      el.type = "number";
+      el.value = entry.freq.every ?? 1;
+      el.min = 1;
+      el.max = 99;
+      el.pattern = "^/d+$";
+      return el;
+    };
+  
+    const createOption = (name, caption, value) => {
+      const el = document.createElement("option");
+      el.value = name;
+      el.innerText = caption;
+      if (name == value) {
+        el.selected = "selected";
+      }
+      return el;
+    };
+
+    /*
+    <select class="form-select" id="fixed_expenses_rent_or_mortgage_period">
+    <option value="day">Day</option>
+    <option value="week">Week</option>
+    <option value="month" selected>Month</option>
+    <option value="year">Year</option>
+    </select>
+    */
+    const createPeriodSelect = (entry) => {
+      const el = document.createElement("select");
+      el.id = entry.name +"_period";
+      el.className = "form-select";
+      el.appendChild(createOption("day", "Day", entry.freq.period));
+      el.appendChild(createOption("week", "Week", entry.freq.period));
+      el.appendChild(createOption("month", "Month", entry.freq.period));
+      el.appendChild(createOption("year", "Year", entry.freq.period));
+      return el;
+    };
+
     const buildCashflowUI = () => {
-      let group = "variable_expenses";
-      const groupEl = document.getElementById(group);
-      _cash_flow_template[group].forEach((entry) => {
-        const p = document.createElement("p");
-        const divRow = createDiv("row align-items-center gx-1");
-        const divCol = createDiv("col");
-        const label = document.createElement("label");
-        label.innerText = entry.caption +" $";
-        label.appendChild(document.createElement("br"));
-        divCol.appendChild(label);
-
-        const divRowEntry = createDiv("row align-items-center gx-1");
-        const divValue = createDiv("col-5");
-        divValue.appendChild(createValueControl(entry));
-        divRowEntry.appendChild(divValue);
-        divCol.appendChild(divRowEntry);
-
-        divRow.appendChild(divCol);
-        p.appendChild(divRow);
-        groupEl.appendChild(p);
+      let groups = ["income_sources", "fixed_expenses", "variable_expenses"];
+      groups.forEach((group) => {
+        const groupEl = document.getElementById(group);
+        _cash_flow_template[group].forEach((entry) => {
+          const p = document.createElement("p");
+          const divRow = createDiv("row align-items-center gx-1");
+          const divCol = createDiv("col");
+          const label = document.createElement("label");
+          label.innerText = entry.caption +" $";
+          label.appendChild(document.createElement("br"));
+          divCol.appendChild(label);
+  
+          const divRowEntry = createDiv("row align-items-center gx-1");
+          const divValue = createDiv("col-5");
+          divValue.appendChild(createValueControl(entry));
+          divRowEntry.appendChild(divValue);
+          const divFreq = createDiv("col-auto", "Frequency");
+          divFreq.appendChild(createFreqControl(entry));
+          divRowEntry.appendChild(divFreq);
+          const divPeriod = createDiv("col-auto", "Period");
+          divPeriod.appendChild(createPeriodSelect(entry));
+          divRowEntry.appendChild(divPeriod);
+          divCol.appendChild(divRowEntry);
+  
+          divRow.appendChild(divCol);
+          p.appendChild(divRow);
+          groupEl.appendChild(p);
+        });
       });
     };
 
@@ -436,28 +487,7 @@ const html = `
               </button>
             </h2>
             <div id="collapse-income" class="accordion-collapse collapse show" aria-labelledby="header-income">
-              <div class="accordion-body p-1">
-                <p>
-                  <div class="row align-items-center gx-1">
-                    <div class="col">
-                      <label>Employment $</label><br>
-                      <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="income_employment"/>
-                    </div>
-                    <div class="col">
-                      <label>Frequency</label><br>
-                      <input class="form-control" value="1" type="number" min="1" max="1000" step="1" pattern="^/d+$" id="income_employment_freq"/>
-                    </div>
-                    <div class="col">
-                      <label>Period</label><br>
-                      <select class="form-select form-select" id="income_employment_period">
-                        <option value="day">Day</option>
-                        <option value="week">Week</option>
-                        <option value="month" selected>Month</option>
-                        <option value="year">Year</option>
-                      </select>
-                    </div>
-                  </div>
-                </p>
+              <div id="income_sources" class="accordion-body p-1">
               </div>
             </div>
           </div>
@@ -468,76 +498,7 @@ const html = `
               </button>
             </h2>
             <div id="collapse-fixed-expenses" class="accordion-collapse collapse" aria-labelledby="header-fixed-expenses">
-              <div class="accordion-body p-1">
-                <p>
-                  <div class="row align-items-center gx-1">
-                    <div class="col">
-                      <label>Rent or mortgage payment $</label><br>
-                      <div class="row align-items-center gx-1">
-                        <div class="col-5">
-                          <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
-                        </div>
-                        <div class="col-auto" title="Frequency">
-                          <input class="form-control form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage_freq"/>
-                        </div>
-                        <div class="col-auto" title="Period">
-                          <select class="form-select form-select" id="fixed_expenses_rent_or_mortgage_period">
-                            <option value="day">Day</option>
-                            <option value="week">Week</option>
-                            <option value="month" selected>Month</option>
-                            <option value="year">Year</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </p>
-                <p>
-                  <div class="row align-items-center">
-                    <div class="col">
-                      <label>Property taxes and/or condo fees $</label><br>
-                      <div class="row align-items-center gx-1">
-                        <div class="col-5">
-                          <input class="form-control" type="number" min="0" max="9999" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
-                        </div>
-                        <div class="col-auto">
-                          <input class="form-control form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee_freq"/>
-                        </div>
-                        <div class="col-auto">
-                          <select class="form-select form-select" id="fixed_expenses_property_tax_or_condo_fee_period">
-                            <option value="day">Day</option>
-                            <option value="week">Week</option>
-                            <option value="month" selected>Month</option>
-                            <option value="year">Year</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </p>
-                <p>
-                  <div class="row align-items-center">
-                    <div class="col">
-                      <label>Home insurance $</label><br>
-                      <div class="row align-items-center gx-1">
-                        <div class="col-5">
-                          <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
-                        </div>
-                        <div class="col-auto">
-                          <input class="form-control form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee_freq"/>
-                        </div>
-                        <div class="col-auto">
-                          <select class="form-select form-select" id="fixed_expenses_property_tax_or_condo_fee_period">
-                            <option value="day">Day</option>
-                            <option value="week">Week</option>
-                            <option value="month" selected>Month</option>
-                            <option value="year">Year</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </p>
+              <div id="fixed_expenses" class="accordion-body p-1">
               </div>
             </div>
           </div>
@@ -549,7 +510,6 @@ const html = `
             </h2>
             <div id="collapse-variable-expenses" class="accordion-collapse collapse" aria-labelledby="header-variable-expenses">
               <div id="variable_expenses" class="accordion-body p-1">
-
               </div>
             </div>
           </div>
