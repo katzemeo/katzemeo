@@ -340,10 +340,18 @@ const html = `
       _cash_flow_template[group].forEach((entry) => {
         let el = document.getElementById(entry.name);
         if (el.value) {
-          let freqEl = document.getElementById(entry.name+"_freq");
-          let periodEl = document.getElementById(entry.name+"_period");
-          const value = parseFloat(el.value);
-          const freq = parseInt(freqEl.value);
+          const freqEl = document.getElementById(entry.name+"_freq");
+          const periodEl = document.getElementById(entry.name+"_period");
+          let value = parseFloat(el.value);
+          if (isNaN(value) || value < 0) {
+            value = 0;
+            el.value = value;
+          }
+          let freq = parseInt(freqEl.value);
+          if (isNaN(freq) || freq < 1) {
+            freq = 1;
+            freqEl.value = freq;
+          }
           let factor = 1;
           if (periodEl.value === "day") {
             factor = 365 / freq;
@@ -351,8 +359,10 @@ const html = `
             factor = 52 / freq;
           } else if (periodEl.value === "month") {
             factor = 12 / freq;
+          } else if (freq > 1) {
+            freqEl.value = 1;
           }
-          total += isNaN(value) ? 0 : value * factor;
+          total += value * factor;
         }
       });
       return total;
