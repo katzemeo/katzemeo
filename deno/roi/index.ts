@@ -300,7 +300,7 @@ const html = `
               </button>
             </h2>
             <div id="collapse-income" class="accordion-collapse collapse show" aria-labelledby="header-income">
-              <div class="accordion-body">
+              <div class="accordion-body p-1">
                 <p>
                   <div class="row align-items-center">
                     <div class="col">
@@ -332,7 +332,7 @@ const html = `
               </button>
             </h2>
             <div id="collapse-fixed-expenses" class="accordion-collapse collapse" aria-labelledby="header-fixed-expenses">
-              <div class="accordion-body">
+              <div class="accordion-body p-1">
                 <p>
                   <div class="row align-items-center">
                     <div class="col">
@@ -361,16 +361,37 @@ const html = `
                   <div class="row align-items-center">
                     <div class="col">
                       <label>Property taxes and/or condo fees $</label><br>
-                      <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
-                    </div>
-                    <div class="col">
                       <div class="row align-items-center">
                         <div class="col-auto">
-                          <label>Frequency</label>
-                          <input class="form-control form-control" value="1" type="number" min="1" max="1000" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee_freq"/>
+                          <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
                         </div>
                         <div class="col-auto">
-                          <label>Period</label>
+                          <input class="form-control form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee_freq"/>
+                        </div>
+                        <div class="col-auto">
+                          <select class="form-select form-select" id="fixed_expenses_property_tax_or_condo_fee_period">
+                            <option value="day">Day</option>
+                            <option value="week">Week</option>
+                            <option value="month" selected>Month</option>
+                            <option value="year">Year</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </p>
+                <p>
+                  <div class="row align-items-center">
+                    <div class="col">
+                      <label>Home insurance $</label><br>
+                      <div class="row align-items-center">
+                        <div class="col-auto">
+                          <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
+                        </div>
+                        <div class="col-auto">
+                          <input class="form-control form-control" value="1" type="number" min="1" max="99" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee_freq"/>
+                        </div>
+                        <div class="col-auto">
                           <select class="form-select form-select" id="fixed_expenses_property_tax_or_condo_fee_period">
                             <option value="day">Day</option>
                             <option value="week">Week</option>
