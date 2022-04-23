@@ -189,6 +189,17 @@ const html = `
         }
       }
     }
+
+    function calculateCashflow() {
+      let monthlyIncome = 0;
+      let monthlyExpense = 0;
+      let el;
+
+      el = document.getElementById("total_monthly_income");
+      el.value = CUR(monthlyIncome);
+      el = document.getElementById("total_monthly_expense");
+      el.value = CUR(monthlyExpense);
+    }
   </script>
 
   <div class="container mt-3">
@@ -338,7 +349,7 @@ const html = `
                     <div class="col">
                       <label>Rent or mortgage payment $</label><br>
                       <div class="row align-items-center gx-1">
-                        <div class="col-6">
+                        <div class="col-5">
                           <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_rent_or_mortgage"/>
                         </div>
                         <div class="col-auto" title="Frequency">
@@ -361,7 +372,7 @@ const html = `
                     <div class="col">
                       <label>Property taxes and/or condo fees $</label><br>
                       <div class="row align-items-center gx-1">
-                        <div class="col-6">
+                        <div class="col-5">
                           <input class="form-control" type="number" min="0" max="9999" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
                         </div>
                         <div class="col-auto">
@@ -384,7 +395,7 @@ const html = `
                     <div class="col">
                       <label>Home insurance $</label><br>
                       <div class="row align-items-center gx-1">
-                        <div class="col-6">
+                        <div class="col-5">
                           <input class="form-control" type="number" min="0" step="1" pattern="^/d+$" id="fixed_expenses_property_tax_or_condo_fee"/>
                         </div>
                         <div class="col-auto">
@@ -429,7 +440,7 @@ const html = `
             </div>
             <div class="col">
               <label>Monthly Expenses</label><br>
-              <input class="form-control" text-muted" type="text" id="total_monthly_expenses" readonly="readonly"/>              
+              <input class="form-control" text-muted" type="text" id="total_monthly_expense" readonly="readonly"/>              
             </div>
           </div>
         </p>
