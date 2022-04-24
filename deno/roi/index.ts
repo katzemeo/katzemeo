@@ -507,6 +507,11 @@ const html = `
       setTextColour(li, yearly_net);
       parentEl.appendChild(li);
     }
+
+    function copyCashFlow() {
+      let el = document.getElementById("total_annual_income");
+      el.value = "1234567890";
+    }
   </script>
 
   <div class="container mt-3">
@@ -655,9 +660,10 @@ const html = `
           </div>
         </div>
         <br/>
-        <p>
+        <div class="d-flex justify-content-between">
           <button class="btn btn-primary" type="button" onclick="calculateCashFlow()">Calculate!</button>
-        </p>
+          <button class="btn btn-primary" type="button" onclick="copyCashFlow()"><i class="fas fa-copy"></i></button>
+        </div>
         <p>
           <div class="row align-items-center">
             <div class="col">
