@@ -278,14 +278,18 @@ const html = `
     }
 
     function copyIncome() {
-      copyToClipboard(JSON.stringify(exportIncome(), null, 1));
+      let data = exportIncome();
+      if (data) {
+        copyToClipboard(JSON.stringify(data, null, 1));
+      }
     }
 
     function shareIncome() {
       if (navigator.share) {
-        navigator.share({ title: "ROI - Income",
-          text: JSON.stringify(exportIncome()),
-          url: window.location.href}).then(() => {
+        navigator.share({
+          title: "ROI - Income",
+          url: window.location.href,
+        }).then(() => {
           console.log('Thanks for sharing!');
         }).catch(err => {
           console.log("Error while using Web share API:");
@@ -297,8 +301,9 @@ const html = `
     }
 
     function exportIncome() {
-      let data = {};
+      let data = null;
       if (calculateIncome()) {
+        data = {};
         data.income = document.getElementById("income").value;
         data.from_date = document.getElementById("from_date").valueAsDate;
         data.to_date = document.getElementById("to_date").valueAsDate;
@@ -335,13 +340,50 @@ const html = `
           el.value = CUR(annual_income/12);
           el = document.getElementById("annual_income");
           el.value = CUR(annual_income);
-          return true;
         }
       } catch (error) {
         //console.log(error);
         alert("Invalid inputs!");
+        return false;
       }
-      return false;
+      return true;
+    }
+
+    function copyROI() {
+      let data = exportROI();
+      if (data) {
+        copyToClipboard(JSON.stringify(data, null, 1));
+      }
+    }
+
+    function shareROI() {
+      if (navigator.share) {
+        navigator.share({
+          title: "ROI - CAGR",
+          url: window.location.href,
+        }).then(() => {
+          console.log('Thanks for sharing!');
+        }).catch(err => {
+          console.log("Error while using Web share API:");
+          console.log(err);
+        });
+      } else {
+        alert("Share not supported!");
+      }
+    }
+
+    function exportROI() {
+      let data = null;
+      if (calculateROI()) {
+        data = {};
+        data.amount = document.getElementById("amount").value;
+        data.return = document.getElementById("return").value;
+        data.years = document.getElementById("years").value;
+        data.start_year = document.getElementById("start_year").value;
+        data.roi = document.getElementById("roi").value;
+        data.cagr = document.getElementById("cagr").value;
+      }
+      return data;
     }
 
     function calculateROI() {
@@ -351,7 +393,7 @@ const html = `
       let ret = parseFloat(el.value);
       if (isNaN(amount) || amount <= 0 || isNaN(ret) || ret < 0) {
         alert("Invalid inputs!");
-        return;
+        return false;
       }
       let roi = (ret - amount) / amount;
       el = document.getElementById("roi");
@@ -382,6 +424,7 @@ const html = `
           let start_year = parseFloat(el.value);
           if (isNaN(start_year) || start_year < 1) {
             start_year = NOW.getFullYear();
+            el.value = start_year;
           }
           value = amount;
           for (let i=1; i<=years; i++) {
@@ -392,8 +435,10 @@ const html = `
           }
         } else {
           alert("Invalid inputs!");
+          return false;
         }
       }
+      return true;
     }
 
     function calculateGroupYearly(group) {
@@ -559,6 +604,8 @@ const html = `
         </p>
         <p>
           <button class="btn btn-primary" type="button" onclick="calculateROI()">Calculate!</button>
+          <button class="btn btn-primary" type="button" onclick="shareROI()"><i class="fas fa-share"></i></button>
+          <button class="btn btn-primary" type="button" onclick="copyROI()"><i class="fas fa-copy"></i></button>
         </p>
         <p>
           <label>ROI</label><br>
