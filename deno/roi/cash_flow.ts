@@ -1,3 +1,5 @@
+import api from './api.ts';
+
 // Monthly budget for a single individual
 const CASH_FLOW_SINGLE = {
   income: [
@@ -25,11 +27,11 @@ const CASH_FLOW_SINGLE = {
 // Monthly budget based on https://itools-ioutils.fcac-acfc.gc.ca/yft-vof/eng/ieb-4-3.aspx
 const CASH_FLOW_DEFAULT = {
   income: [
-    { employment: "Employment", freq: {every: 2, period: "week"}, value: 2000, step: 1000 },
-    { bonuses: "Bonuses", freq: {every: 1, period: "year"}, value: 5000, step: 1000 },
+    { employment: "Employment (after deductions)", freq: {every: 2, period: "week"}, value: 2000, step: 1000 },
+    { bonuses: "Bonuses (after deductions)", freq: {every: 1, period: "year"}, value: 5000, step: 1000 },
     { tips_commissions: "Tips or commissions", freq: {every: 1, period: "week"}, step: 100 },
     { govt_payments: "Government payments", freq: {every: 1, period: "month"}, step: 100 },
-    { self_employment: "Self-employment", freq: {every: 1, period: "month"}, step: 1000 },
+    { self_employment: "Self-employment (net)", freq: {every: 1, period: "month"}, step: 1000 },
     { gifts: "Gifts", freq: {every: 1, period: "year"}, step: 1000 },
     { grants_scholarships: "Grants or scholarships", freq: {every: 1, period: "year"}, step: 500 },
     { royalties: "Royalties", freq: {every: 1, period: "year"}, step: 1000 },
@@ -73,8 +75,14 @@ function getCaption(entry: any) {
   return entry[getName(entry)];
 }
 
-export const getCashFlow = (profile: string = "default") => {
-  let template = profile == "single" ? CASH_FLOW_SINGLE : CASH_FLOW_DEFAULT;
+export const getCashFlow = async (guid: any = null, profile: string = "default") => {
+  let template: any;
+  if (guid) {
+    template = await api.getCashFlow(guid, profile);
+  } else {
+    template = profile == "single" ? CASH_FLOW_SINGLE : CASH_FLOW_DEFAULT;
+  }
+
   return {
     income_sources: template.income.map((e: any) => ({
       name: getName(e),

@@ -53,6 +53,7 @@ const html = `
     const _percentFormat = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFactionDigits: 2 }).format;
     const PCT = function (value) { if (!isNaN(value)) { return _percentFormat(value); } return ""; };
     const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency", currencyDisplay: "symbol", currencySign: "accounting" }).format;
+    var _guid = null;
     var _profile = null;
     var _cash_flow_template = null;
 
@@ -151,7 +152,7 @@ const html = `
       return el;
     };
 
-    const buildCashflowUI = () => {
+    const buildCashFlowUI = () => {
       let groups = ["income_sources", "fixed_expenses", "variable_expenses"];
       groups.forEach((group) => {
         const groupEl = document.getElementById(group);
@@ -184,30 +185,40 @@ const html = `
     };
 
     const getCashflowTemplate = () => {
-      const url = "/cashflow/template";
-      fetch(_profile ? url + "?profile=" + _profile : url, {
+      let url;
+      const params = new URLSearchParams();
+      if (_guid && _profile) {
+        url = "/cashflow/api";
+        params.set("guid", _guid);
+        params.set("profile", _profile);
+      } else {
+        url = "/cashflow/template";
+        if (_profile) {
+          params.set("profile", _profile);
+        }
+      }
+      fetch(url+"?"+params.toString(), {
         method: "GET",
         headers: JSON_HEADERS,
-      }).then((response) =>
-        response.json().then((data) => ({
-          data: data,
-          status: response.status,
-        })).then((res) => {
-          if (res.status == 200) {
-            _cash_flow_template = res.data;
+      }).then((res) => {
+        if (res.status == 200) {
+          res.json().then((data) => {
+            _cash_flow_template = data;
             //console.log(_cash_flow_template);
-            buildCashflowUI();
-          } else {
-            console.log("Unexpected response", res.status);
-          }
-        }).catch((error) => {
-          console.log("Unexpected error", error);
-        })
-      );
+            buildCashFlowUI();
+          });
+        } else {
+          console.log("Unexpected response", res.status);
+        }
+      }).catch((error) => {
+        console.error(error);
+        window.alert("Unable to get cash flow template.  Please try again.");
+      });
     };
 
     window.onload = function () {
       const url = new URL(window.location.href);
+      _guid = url.searchParams.get("guid");
       _profile = url.searchParams.get("profile");
       configureTabs();
 
@@ -584,7 +595,17 @@ async function handleRequest(request: Request): Promise<Response> {
       return new Response(`OK`);
     } else if (pathname == "/cashflow/template") {
       const profile: any = url.searchParams.get("profile");
-      return new Response(JSON.stringify(getCashFlow(profile)), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(await getCashFlow(null, profile)), { headers: { 'Content-Type': 'application/json' } });
+    } else if (pathname == "/cashflow/api") {
+      const guid: any = url.searchParams.get("guid");
+      const profile: any = url.searchParams.get("profile");
+      if (!guid || !profile) {
+        return new Response(`Bad request`, {
+          status: 400,
+          headers: { "content-type": "text/plain" },
+        });
+      }
+      return new Response(JSON.stringify(await getCashFlow(guid, profile)), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
   } catch (error) {
