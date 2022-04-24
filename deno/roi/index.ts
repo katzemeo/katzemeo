@@ -1,6 +1,6 @@
-import { serve } from 'https://deno.land/std@0.128.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
 import { open } from "https://deno.land/x/open/index.ts";
-import { getCashFlow } from './cash_flow.ts';
+import { getCashFlow } from "./cash_flow.ts";
 
 const html = `
 <!DOCTYPE html>
@@ -223,7 +223,7 @@ const html = `
       const url = new URL(window.location.href);
       _guid = url.searchParams.get("guid");
       _profile = url.searchParams.get("profile");
-      configureTabs();
+      //configureTabs();
 
       let el;
       el = document.getElementById("income");
@@ -685,6 +685,9 @@ const html = `
       </div>
     </div>
   </div>
+  <footer>
+    <div class="text-center text-muted fs-6">v0.1 - 04/24/2022</div>
+  </footer>
   </body>
 </html>`
 
