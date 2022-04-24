@@ -187,17 +187,20 @@ const html = `
     const getCashflowTemplate = () => {
       let url;
       const params = new URLSearchParams();
+      if (_guid) {
+        params.set("guid", _guid);
+      }
+      if (_profile) {
+        params.set("profile", _profile);
+      }
       if (_guid && _profile) {
         url = "/cashflow/api";
-        params.set("guid", _guid);
-        params.set("profile", _profile);
       } else {
         url = "/cashflow/template";
-        if (_profile) {
-          params.set("profile", _profile);
-        }
       }
-      fetch(url+"?"+params.toString(), {
+      url += "?"+params.toString();
+
+      fetch(url, {
         method: "GET",
         headers: JSON_HEADERS,
       }).then((res) => {
@@ -265,6 +268,48 @@ const html = `
       return cagr;
     }
 
+    function copyToClipboard(text) {
+      var tmpElement = document.createElement("input");
+      tmpElement.value = text;
+      document.body.appendChild(tmpElement);
+      tmpElement.select();
+      document.execCommand("copy");
+      document.body.removeChild(tmpElement);
+    }
+
+    function copyIncome() {
+      copyToClipboard(JSON.stringify(exportIncome(), null, 1));
+    }
+
+    function shareIncome() {
+      if (navigator.share) {
+        navigator.share({ title: "ROI - Income",
+          text: JSON.stringify(exportIncome()),
+          url: window.location.href}).then(() => {
+          console.log('Thanks for sharing!');
+        }).catch(err => {
+          console.log("Error while using Web share API:");
+          console.log(err);
+        });
+      } else {
+        alert("Share not supported!");
+      }
+    }
+
+    function exportIncome() {
+      let data = {};
+      if (calculateIncome()) {
+        data.income = document.getElementById("income").value;
+        data.from_date = document.getElementById("from_date").valueAsDate;
+        data.to_date = document.getElementById("to_date").valueAsDate;
+        data.total_days = document.getElementById("total_days").value;
+        data.daily_average = document.getElementById("daily_average").value;
+        data.monthly_income = document.getElementById("monthly_income").value;
+        data.annual_income = document.getElementById("annual_income").value;
+      }
+      return data;
+    }
+
     function calculateIncome() {
       let el = document.getElementById("income");
       let income = parseFloat(el.value);
@@ -290,11 +335,13 @@ const html = `
           el.value = CUR(annual_income/12);
           el = document.getElementById("annual_income");
           el.value = CUR(annual_income);
+          return true;
         }
       } catch (error) {
         //console.log(error);
         alert("Invalid inputs!");
       }
+      return false;
     }
 
     function calculateROI() {
@@ -461,6 +508,8 @@ const html = `
         </p>
         <p>
           <button class="btn btn-primary" type="button" onclick="calculateIncome()">Calculate!</button>
+          <button class="btn btn-primary" type="button" onclick="shareIncome()"><i class="fas fa-share"></i></button>
+          <button class="btn btn-primary" type="button" onclick="copyIncome()"><i class="fas fa-copy"></i></button>
         </p>
         <p>
           <div class="row align-items-center">
