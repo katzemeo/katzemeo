@@ -74,22 +74,6 @@ const html = `
       return defaultValue;
     };
 
-    const configureTabs = () => {
-      let tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
-      tabs.forEach((tab) => {
-        tab.addEventListener('show.bs.tab', function (event) {
-          //console.log(event.target);
-          if (event.target && event.target.name === "cashflow") {
-            if (!_cash_flow_template) {
-              getCashflowTemplate();
-            }
-          }
-          //event.target // newly activated tab
-          //event.relatedTarget // previous active tab
-        });
-      });
-    };
-
     const createDiv = (className, title=null) => {
       const el = document.createElement("div");
       el.className = className;
@@ -217,6 +201,22 @@ const html = `
       }).catch((error) => {
         console.error(error);
         window.alert("Unable to get cash flow template.  Please try again.");
+      });
+    };
+
+    const configureTabs = () => {
+      let tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+      tabs.forEach((tab) => {
+        tab.addEventListener('show.bs.tab', function (event) {
+          //console.log(event.target);
+          if (event.target && event.target.name === "cashflow") {
+            if (!_cash_flow_template) {
+              getCashflowTemplate();
+            }
+          }
+          //event.target // newly activated tab
+          //event.relatedTarget // previous active tab
+        });
       });
     };
 
