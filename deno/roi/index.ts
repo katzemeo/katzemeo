@@ -425,16 +425,21 @@ const html = `
     </ul>
     <div class="border-grey bg-white p-2 tab-content">
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
-        <p class="fw-bold"> Welcome! </p>
-        <p> The following tools can help you measure Return on Investments (ROI) and assess your potential Cash Flow risks. </p>
+        <p class="fw-bold">
+          <a class="text-decoration-none" target="katzemeo" href="https://twitter.com/katzemeo" title='Follow "Silvester the Invester" on Twitter @katzemeo'>
+            <img src="https://invest.npsolve.com/public/silvester.png" alt="Silvester" width="32" height="32">
+          </a>
+          Welcome!
+        </p>
+        <p> The following tools can help you measure Return on Investments (ROI), calculate and assess your potential Cash Flow risks. </p>
         <ul>
-          <li>Use the <a href="javascript:document.getElementById('income-tab').click()">Income</a> tab to help calculate the daily average as well as extrapolated monthly and annual income.</li>
-          <li>Use the <a href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab to help calculate the expected annual growth rate for your investments.</li>
-          <li>Use the <a href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab to check if you have sufficient cash flow for your situation.</li>
+          <li>The <a class="text-decoration-none" href="javascript:document.getElementById('income-tab').click()">Income</a> tab help calculate the daily average as well as extrapolated monthly and annual income.</li>
+          <li>The <a class="text-decoration-none" href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab help calculate the expected annual growth rate for your investments.</li>
+          <li>The <a class="text-decoration-none" href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab help check if your income is sufficient after expenses.</li>
         </ul>
-        <p class="text-muted"> This simple tool is implemented as stateless single-page application (SPA) built primarily with HTML 5, JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
-        <a href="https://deno.com/deploy">Deno Deploy</a>.
-        If interested, you can see the details on <a href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">Github</a>.
+        <p class="text-muted"> The tools are is implemented as stateless single-page application (SPA) built primarily with HTML 5, JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
+        <a class="text-decoration-none" href="https://deno.com/deploy">Deno Deploy</a>.  Once loaded, all processing is done locally within the web browser.
+        If interested, you can see the details on <a class="text-decoration-none" href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">Github</a>.
         </p>
       </div>
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
