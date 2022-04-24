@@ -88,11 +88,13 @@ const html = `
             </div>
           </div>
         </p>
-        <p>
-          <button class="btn btn-primary" type="button" onclick="calculateIncome()">Calculate!</button>
-          <button class="btn btn-primary" type="button" onclick="shareIncome()"><i class="fas fa-share"></i></button>
-          <button class="btn btn-primary" type="button" onclick="copyIncome()"><i class="fas fa-copy"></i></button>
-        </p>
+        <div class="d-flex justify-content-between">
+          <div>
+            <button class="btn btn-primary" type="button" onclick="calculateIncome()">Calculate!</button>
+            <button class="btn btn-primary" type="button" onclick="copyData(exportIncome)"><i class="fas fa-copy"></i></button>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="shareURL('income', 'ROI - Income')"><i class="fas fa-share"></i></button>
+        </div>
         <p>
           <div class="row align-items-center">
             <div class="col">
@@ -139,11 +141,13 @@ const html = `
             </div>
           </div>
         </p>
-        <p>
-          <button class="btn btn-primary" type="button" onclick="calculateROI()">Calculate!</button>
-          <button class="btn btn-primary" type="button" onclick="shareROI()"><i class="fas fa-share"></i></button>
-          <button class="btn btn-primary" type="button" onclick="copyROI()"><i class="fas fa-copy"></i></button>
-        </p>
+        <div class="d-flex justify-content-between">
+          <div>
+            <button class="btn btn-primary" type="button" onclick="calculateROI()">Calculate!</button>
+            <button class="btn btn-primary" type="button" onclick="copyData(exportROI)"><i class="fas fa-copy"></i></button>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="shareURL('cagr', 'ROI - CAGR')"><i class="fas fa-share"></i></button>
+        </div>
         <p>
           <label>ROI</label><br>
           <input class="form-control text-muted" type="text" id="roi" readonly="readonly"/>
@@ -152,7 +156,7 @@ const html = `
           <label>CAGR</label><br>
           <input class="form-control text-muted" type="text" id="cagr" readonly="readonly"/>
         </p>
-        <p id="table" />
+        <p id="cagr_table" />
       </div>
       <div class="tab-pane" id="cashflow-pane" role="tabpanel" aria-labelledby="cashflow-tab">
         <div class="accordion">
@@ -192,8 +196,11 @@ const html = `
         </div>
         <br/>
         <div class="d-flex justify-content-between">
-          <button class="btn btn-primary" type="button" onclick="calculateCashFlow()">Calculate!</button>
-          <button class="btn btn-primary" type="button" onclick="copyCashFlow()"><i class="fas fa-copy"></i></button>
+          <div>
+            <button class="btn btn-primary" type="button" onclick="calculateCashFlow()">Calculate!</button>
+            <button class="btn btn-primary" type="button" onclick="copyData(exportCashFlow)"><i class="fas fa-copy"></i></button>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="shareURL('cashflow', 'ROI - Cash Flow')"><i class="fas fa-share"></i></button>
         </div>
         <p>
           <div class="row align-items-center">
@@ -461,18 +468,20 @@ const html = `
       document.body.removeChild(tmpElement);
     }
 
-    function copyIncome() {
-      let data = exportIncome();
+    function copyData(exportFn) {
+      let data = exportFn();
       if (data) {
         copyToClipboard(JSON.stringify(data, null, 1));
       }
     }
 
-    function shareIncome() {
+    function shareURL(path, title) {
       if (navigator.share) {
+        const url = window.location.origin +"/"+ path + window.location.search;
+        console.log(url);
         navigator.share({
-          title: "ROI - Income",
-          url: window.location.href,
+          title: title,
+          url: url,
         }).then(() => {
           console.log('Thanks for sharing!');
         }).catch(err => {
@@ -533,29 +542,6 @@ const html = `
       return true;
     }
 
-    function copyROI() {
-      let data = exportROI();
-      if (data) {
-        copyToClipboard(JSON.stringify(data, null, 1));
-      }
-    }
-
-    function shareROI() {
-      if (navigator.share) {
-        navigator.share({
-          title: "ROI - CAGR",
-          url: window.location.href,
-        }).then(() => {
-          console.log('Thanks for sharing!');
-        }).catch(err => {
-          console.log("Error while using Web share API:");
-          console.log(err);
-        });
-      } else {
-        alert("Share not supported!");
-      }
-    }
-
     function exportROI() {
       let data = null;
       if (calculateROI()) {
@@ -566,6 +552,13 @@ const html = `
         data.start_year = document.getElementById("start_year").value;
         data.roi = document.getElementById("roi").value;
         data.cagr = document.getElementById("cagr").value;
+
+        let parentEl = document.getElementById("cagr_table");
+        var children = parentEl.children;
+        for (var i=0; i < children.length; i++) {
+          el = children[i];
+          data["cagr_year"+(i+1)] = el.innerText;
+        }
       }
       return data;
     }
@@ -588,7 +581,7 @@ const html = `
         el.className = "form-control text-success";
       }
 
-      let parentEl = document.getElementById("table");
+      let parentEl = document.getElementById("cagr_table");
       removeChildren(parentEl);
     
       el = document.getElementById("years");
@@ -686,14 +679,30 @@ const html = `
       setTextColour(li, yearly_net);
       parentEl.appendChild(li);
       li = document.createElement("li");
-      li.innerText = "Yearly Net = "+ CUR(yearly_net);
+      li.innerText = "Annual Net = "+ CUR(yearly_net);
       setTextColour(li, yearly_net);
       parentEl.appendChild(li);
+
+      return true;
     }
 
-    function copyCashFlow() {
-      let el = document.getElementById("total_annual_income");
-      el.value = "1234567890";
+    function exportCashFlow() {
+      let data = null;
+      if (calculateCashFlow()) {
+        data = {};
+        data.total_monthly_income = document.getElementById("total_monthly_income").value;
+        data.total_monthly_expense = document.getElementById("total_monthly_expense").value;
+        data.total_annual_income = document.getElementById("total_annual_income").value;
+        data.total_annual_expense = document.getElementById("total_annual_expense").value;
+
+        let parentEl = document.getElementById("cashflow_net");
+        var children = parentEl.children;
+        for (var i=0; i < children.length; i++) {
+          el = children[i];
+          data["net"+(i+1)] = el.innerText;
+        }
+      }
+      return data;
     }
   </script>
   </body>
