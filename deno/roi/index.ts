@@ -78,6 +78,7 @@ const html = `
       let tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
       tabs.forEach((tab) => {
         tab.addEventListener('show.bs.tab', function (event) {
+          //console.log(event.target);
           if (event.target && event.target.name === "cashflow") {
             if (!_cash_flow_template) {
               getCashflowTemplate();
@@ -223,7 +224,7 @@ const html = `
       const url = new URL(window.location.href);
       _guid = url.searchParams.get("guid");
       _profile = url.searchParams.get("profile");
-      //configureTabs();
+      configureTabs();
 
       let el;
       el = document.getElementById("income");
@@ -474,7 +475,7 @@ const html = `
       return total;
     }
 
-    function calculateCashflow() {
+    function calculateCashFlow() {
       let yearlyIncome = calculateGroupYearly("income_sources");
       let yearlyExpense = calculateGroupYearly("fixed_expenses") + calculateGroupYearly("variable_expenses");
       let el;
@@ -621,11 +622,11 @@ const html = `
         <div class="accordion">
           <div class="accordion-item">
             <h2 class="accordion-header" id="header-income">
-              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-income" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-income" aria-expanded="false" aria-controls="panelsStayOpen-collapseOne">
                 Income / Revenue
               </button>
             </h2>
-            <div id="collapse-income" class="accordion-collapse collapse show" aria-labelledby="header-income">
+            <div id="collapse-income" class="accordion-collapse collapse" aria-labelledby="header-income">
               <div id="income_sources" class="accordion-body p-1">
               </div>
             </div>
@@ -655,7 +656,7 @@ const html = `
         </div>
         <br/>
         <p>
-          <button class="btn btn-primary" type="button" onclick="calculateCashflow()">Calculate!</button>
+          <button class="btn btn-primary" type="button" onclick="calculateCashFlow()">Calculate!</button>
         </p>
         <p>
           <div class="row align-items-center">
