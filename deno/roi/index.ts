@@ -427,7 +427,7 @@ const html = `
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
         <p class="fw-bold">
           <a class="text-decoration-none" target="katzemeo" href="https://twitter.com/katzemeo" title='Follow "Silvester the Invester" on Twitter @katzemeo'>
-            <img src="https://invest.npsolve.com/public/silvester.png" alt="Silvester" width="32" height="32">
+            <img src="https://invest.npsolve.com/public/silvester.png" alt="Silvester" width="48" height="48">
           </a>
           Welcome!
         </p>
@@ -437,9 +437,9 @@ const html = `
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab help calculate the expected annual growth rate for your investments.</li>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab help check if your income is sufficient after expenses.</li>
         </ul>
-        <p class="text-muted"> The tools are is implemented as stateless single-page application (SPA) built primarily with HTML 5, JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
+        <p class="text-muted"> The tools are implemented as a stateless single-page application (SPA) built primarily with HTML 5, JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
         <a class="text-decoration-none" href="https://deno.com/deploy">Deno Deploy</a>.  Once loaded, all processing is done locally within the web browser.
-        If interested, you can see the details on <a class="text-decoration-none" href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">Github</a>.
+        If interested, you can see the details on <a class="text-decoration-none" href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">GitHub</a>.
         </p>
       </div>
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
