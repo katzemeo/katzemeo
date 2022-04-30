@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
 import { open } from "https://deno.land/x/open/index.ts";
+import { getCashCount } from "./cash_count.ts";
 import { getCashFlow } from "./cash_flow.ts";
 
 const html = `
@@ -48,6 +49,7 @@ const html = `
   <div class="container mt-3">
     <ul class="m-0 nav nav-fill nav-justified nav-tabs" id="tab-nav" role="tablist">
       <li class="nav-item" role="presentation" title="Introduction and Notes"> <button class="active nav-link" name="home" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"><nobr><i class="fas fa-home"></i> Home</button></nobr></li>
+      <li class="nav-item" role="presentation" title="Cash Count for Date"> <button class="nav-link" name="cashcount" id="cashcount-tab" data-bs-toggle="tab" data-bs-target="#cashcount-pane" type="button" role="tab" aria-controls="cashcount-pane" aria-selected="false"><nobr><i class="fas fa-coins"></i> Cash Count</button></nobr></li>
       <li class="nav-item" role="presentation" title="Extrapolated Income from Date Range"> <button class="nav-link" name="income" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"><nobr><i class="fas fa-dollar-sign"></i> Income</button></nobr></li>
       <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" name="cagr" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"><nobr><i class="fas fa-percent"></i> CAGR</button></nobr></li>
       <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" name="cashflow" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"><nobr><i class="fas fa-chart-line"></i> Cash Flow</nobr></button> </li>  
@@ -60,7 +62,9 @@ const html = `
           </a>
           Welcome!
         </p>
-        <p> The following tools can help you measure Return on Investments (ROI), calculate and assess your potential Cash Flow risks. </p>
+        <p> The following tools can help you measure Return on Investments (ROI),
+        <a class="text-decoration-none" href="javascript:document.getElementById('cashcount-tab').click()">Count Cash</a>,
+        calculate and assess your potential Cash Flow risks. </p>
         <ul>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('income-tab').click()">Income</a> tab help calculate the daily average as well as extrapolated monthly and annual income.</li>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab help calculate the expected annual growth rate for your investments.</li>
@@ -70,6 +74,75 @@ const html = `
         <a class="text-decoration-none" href="https://deno.com/deploy">Deno Deploy</a>.  Once loaded, all processing is done locally within the web browser.
         If interested, you can see the details on <a class="text-decoration-none" href="https://github.com/katzemeo/katzemeo/tree/main/deno/roi">GitHub</a>.
         </p>
+      </div>
+      <div class="tab-pane" id="cashcount-pane" role="tabpanel" aria-labelledby="cashcount-tab">
+        <div class="accordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="header-dates">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dates" aria-expanded="false" aria-controls="panelsStayOpen-collapseOne">
+                Dates
+              </button>
+            </h2>
+            <div id="collapse-dates" class="accordion-collapse collapse" aria-labelledby="header-dates">
+              <div id="cashcount-dates" class="accordion-body p-1">
+                <p>
+                  <div class="row align-items-center">
+                    <div class="col">
+                      <label>From Date</label><br>
+                      <input class="form-control" type="date" id="count_from_date"/>              
+                    </div>
+                    <div class="col">
+                      <label>To Date</label><br>
+                      <input class="form-control" type="date" id="count_to_date"/>              
+                    </div>
+                  </div>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="header-quarters">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-quarters" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
+                Quarters (25&#162;)
+              </button>
+            </h2>
+            <div id="collapse-quarters" class="accordion-collapse collapse" aria-labelledby="header-quarters">
+              <div id="quarters" class="accordion-body p-1">
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="header-loonies">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-loonies" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
+                Loonies (1&#36;)
+              </button>
+            </h2>
+            <div id="collapse-loonies" class="accordion-collapse collapse" aria-labelledby="header-loonies">
+              <div id="loonies" class="accordion-body p-1">
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="header-toonies">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-toonies" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
+                Toonies (2&#36;)
+              </button>
+            </h2>
+            <div id="collapse-toonies" class="accordion-collapse collapse" aria-labelledby="header-toonies">
+              <div id="toonies" class="accordion-body p-1">
+              </div>
+            </div>
+          </div>
+        </div>
+        <br/>
+        <div class="d-flex justify-content-between">
+          <div>
+            <button class="btn btn-primary" type="button" onclick="calculateCashCount()">Calculate!</button>
+            <button class="btn btn-primary" type="button" onclick="copyData(exportCashCount)"><i class="fas fa-copy"></i></button>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="shareURL('cashcount', 'ROI - Cash Count')"><i class="fas fa-share"></i></button>
+        </div>
+        <p id="cashcount_totals" />
       </div>
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
         <p>
@@ -231,7 +304,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.1 - 04/24/2022</div>
+    <div class="text-center text-muted fs-6">v0.2 - &copy; 04/30/2022</div>
   </footer>
 
   <script>
@@ -245,6 +318,7 @@ const html = `
     const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency", currencyDisplay: "symbol", currencySign: "accounting" }).format;
     var _guid = null;
     var _profile = null;
+    var _cash_count_template = null;
     var _cash_flow_template = null;
 
     const removeChildren = (parent, header = 0) => {
@@ -269,6 +343,24 @@ const html = `
       el.className = className;
       if (title) {
         el.title = title;
+      }
+      return el;
+    };
+
+    const createCountControl = (entry) => {
+      const el = document.createElement("input");
+      el.id = entry.name;
+      el.className = "form-control";
+      el.type = "number";
+      if (entry.value !== undefined) {
+        el.value = entry.value;
+      }
+      el.min = entry.min ?? 0;
+      if (entry.max !== undefined) {
+        el.max = entry.max;
+      }
+      if (entry.step) {
+        el.step = entry.step;
       }
       return el;
     };
@@ -327,6 +419,32 @@ const html = `
       return el;
     };
 
+    const buildCashCountUI = () => {
+      let groups = ["quarters", "loonies", "toonies"];
+      groups.forEach((group) => {
+        const groupEl = document.getElementById(group);
+        _cash_count_template[group].forEach((entry) => {
+          const p = document.createElement("p");
+          const divRow = createDiv("row align-items-center gx-1");
+          const divCol = createDiv("col");
+          const label = document.createElement("label");
+          label.innerText = _cash_count_template.categories[entry.name];
+          label.appendChild(document.createElement("br"));
+          divCol.appendChild(label);
+  
+          const divRowEntry = createDiv("row align-items-center gx-1");
+          const divValue = createDiv("col-5");
+          divValue.appendChild(createCountControl(entry));
+          divRowEntry.appendChild(divValue);
+          divCol.appendChild(divRowEntry);
+  
+          divRow.appendChild(divCol);
+          p.appendChild(divRow);
+          groupEl.appendChild(p);
+        });
+      });
+    };
+  
     const buildCashFlowUI = () => {
       let groups = ["income_sources", "fixed_expenses", "variable_expenses"];
       groups.forEach((group) => {
@@ -359,7 +477,35 @@ const html = `
       });
     };
 
-    const getCashflowTemplate = () => {
+    const getCashCountTemplate = () => {
+      if (!_guid || !_profile) {
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set("guid", _guid);
+      params.set("profile", _profile);
+      let url = "/cashcount/api" + "?" + params.toString();
+      fetch(url, {
+        method: "GET",
+        headers: JSON_HEADERS,
+      }).then((res) => {
+        if (res.status == 200) {
+          res.json().then((data) => {
+            _cash_count_template = data;
+            console.log(_cash_count_template);
+            buildCashCountUI();
+          });
+        } else {
+          console.log("Unexpected response", res.status);
+        }
+      }).catch((error) => {
+        console.error(error);
+        window.alert("Unable to get cash count template.  Please try again.");
+      });
+    };
+  
+    const getCashFlowTemplate = () => {
       let url;
       const params = new URLSearchParams();
       if (_guid) {
@@ -399,9 +545,13 @@ const html = `
       tabs.forEach((tab) => {
         tab.addEventListener('show.bs.tab', function (event) {
           //console.log(event.target);
-          if (event.target && event.target.name === "cashflow") {
+          if (event.target && event.target.name === "cashcount") {
+            if (!_cash_count_template) {
+              getCashCountTemplate();
+            }
+          } else if (event.target && event.target.name === "cashflow") {
             if (!_cash_flow_template) {
-              getCashflowTemplate();
+              getCashFlowTemplate();
             }
           }
           //event.target // newly activated tab
@@ -417,6 +567,12 @@ const html = `
       configureTabs();
 
       let el;
+
+      el = document.getElementById("count_from_date");
+      el.valueAsDate = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - 7);
+      el = document.getElementById("count_to_date");
+      el.valueAsDate = NOW;
+
       el = document.getElementById("income");
       el.value = getFloatParam(url, "income", 1000);
       el = document.getElementById("from_date");
@@ -651,6 +807,18 @@ const html = `
       return total;
     }
 
+    function calculateCashCount() {
+      return true;
+    }
+
+    function exportCashCount() {
+      let data = null;
+      if (calculateCashCount()) {
+        data = {};
+      }
+      return data;
+    }
+  
     function calculateCashFlow() {
       let yearlyIncome = calculateGroupYearly("income_sources");
       let yearlyExpense = calculateGroupYearly("fixed_expenses") + calculateGroupYearly("variable_expenses");
@@ -727,6 +895,16 @@ async function handleRequest(request: Request): Promise<Response> {
         });
       }
       return new Response(JSON.stringify(await getCashFlow(guid, profile)), { headers: { 'Content-Type': 'application/json' } });
+    } else if (pathname == "/cashcount/api") {
+      const guid: any = url.searchParams.get("guid");
+      const profile: any = url.searchParams.get("profile");
+      if (!guid || !profile) {
+        return new Response(`Bad request`, {
+          status: 400,
+          headers: { "content-type": "text/plain" },
+        });
+      }
+      return new Response(JSON.stringify(await getCashCount(guid, profile)), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
   } catch (error) {
