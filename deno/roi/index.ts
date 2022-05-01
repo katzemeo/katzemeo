@@ -76,14 +76,14 @@ const html = `
         </p>
       </div>
       <div class="tab-pane" id="cashcount-pane" role="tabpanel" aria-labelledby="cashcount-tab">
-        <div class="accordion">
+        <div class="accordion" id="accordion-items-denominations">
           <div class="accordion-item">
             <h2 class="accordion-header" id="header-dates">
-              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dates" aria-expanded="false" aria-controls="panelsStayOpen-collapseOne">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dates" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
                 Dates
               </button>
             </h2>
-            <div id="collapse-dates" class="accordion-collapse collapse" aria-labelledby="header-dates">
+            <div id="collapse-dates" class="accordion-collapse collapse show" aria-labelledby="header-dates">
               <div id="cashcount-dates" class="accordion-body p-1">
                 <p>
                   <div class="row align-items-center">
@@ -100,39 +100,6 @@ const html = `
               </div>
             </div>
           </div>
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="header-quarters">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-quarters" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
-                Quarters (25&#162;)
-              </button>
-            </h2>
-            <div id="collapse-quarters" class="accordion-collapse collapse" aria-labelledby="header-quarters">
-              <div id="quarters" class="accordion-body p-1">
-              </div>
-            </div>
-          </div>
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="header-loonies">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-loonies" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
-                Loonies (1&#36;)
-              </button>
-            </h2>
-            <div id="collapse-loonies" class="accordion-collapse collapse" aria-labelledby="header-loonies">
-              <div id="loonies" class="accordion-body p-1">
-              </div>
-            </div>
-          </div>
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="header-toonies">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-toonies" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
-                Toonies (2&#36;)
-              </button>
-            </h2>
-            <div id="collapse-toonies" class="accordion-collapse collapse" aria-labelledby="header-toonies">
-              <div id="toonies" class="accordion-body p-1">
-              </div>
-            </div>
-          </div>
         </div>
         <br/>
         <div class="d-flex justify-content-between">
@@ -142,6 +109,9 @@ const html = `
           </div>
           <button class="btn btn-primary" type="button" onclick="shareURL('cashcount', 'ROI - Cash Count')"><i class="fas fa-share"></i></button>
         </div>
+        <br/>
+        <p id="cashcount_subtotals_group">
+        </p>
         <p id="cashcount_totals" />
       </div>
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
@@ -347,9 +317,9 @@ const html = `
       return el;
     };
 
-    const createCountControl = (entry) => {
+    const createCountControl = (prefix, entry) => {
       const el = document.createElement("input");
-      el.id = entry.name;
+      el.id = prefix + "_"+ entry.name;
       el.className = "form-control";
       el.type = "number";
       if (entry.value !== undefined) {
@@ -419,11 +389,63 @@ const html = `
       return el;
     };
 
+    const getName = (entry) => {
+      return Object.keys(entry)[0];
+    };
+
+    const createAccordionItem = (entry) => {
+      const name = getName(entry);
+      const divAccordionItem = createDiv("accordion-item");
+      const accordionHeader = document.createElement("h2");
+      accordionHeader.className = "accordion-header";
+      accordionHeader.id = "header-" + name;
+      const accordionButton = document.createElement("button");
+      accordionButton.className = "accordion-button collapsed";
+      accordionButton.type = "button";
+      accordionButton.setAttribute("data-bs-toggle", "collapse");
+      accordionButton.setAttribute("data-bs-target", "#collapse-" + name);
+      accordionButton.setAttribute("aria-expanded", "false");
+      accordionButton.setAttribute("aria-controls", "panelsStayOpen-collapseTwo");
+      accordionButton.innerHTML = _cash_count_template.categories[name];
+      accordionHeader.appendChild(accordionButton);
+      divAccordionItem.appendChild(accordionHeader);
+
+      const divAccordionCollapse = createDiv("accordion-collapse collapse");
+      divAccordionCollapse.id = "collapse-" + name;
+      divAccordionCollapse.setAttribute("aria-labelledby", "header-" + name);
+      const divAccordionBody = createDiv("accordion-body p-1");
+      divAccordionBody.id = name;
+      divAccordionCollapse.appendChild(divAccordionBody);
+      divAccordionItem.appendChild(divAccordionCollapse);
+
+      return divAccordionItem;
+    };
+
+    const createLabelReadonlyInput = (labelText, elementId) => {
+      const divRowEntry = createDiv("row align-items-center");
+      const divCol = createDiv("col");
+      const label = document.createElement("label");
+      label.innerText = labelText;
+      divCol.appendChild(label);
+
+      const el = document.createElement("input");
+      el.type = "text";
+      el.readonly = "readonly";
+      el.id = elementId;
+      el.className = "form-control text-muted";
+      divCol.appendChild(el);
+      divRowEntry.appendChild(divCol);
+
+      return divRowEntry;
+    }
+
     const buildCashCountUI = () => {
-      let groups = ["quarters", "loonies", "toonies"];
-      groups.forEach((group) => {
-        const groupEl = document.getElementById(group);
-        _cash_count_template[group].forEach((entry) => {
+      const parentEl = document.getElementById("accordion-items-denominations");
+      _cash_count_template.denominations.forEach((group) => {
+        parentEl.appendChild(createAccordionItem(group));
+        const name = getName(group);
+        const groupEl = document.getElementById(name);
+        group[name].forEach((entry) => {
           const p = document.createElement("p");
           const divRow = createDiv("row align-items-center gx-1");
           const divCol = createDiv("col");
@@ -434,7 +456,7 @@ const html = `
   
           const divRowEntry = createDiv("row align-items-center gx-1");
           const divValue = createDiv("col-5");
-          divValue.appendChild(createCountControl(entry));
+          divValue.appendChild(createCountControl(name, entry));
           divRowEntry.appendChild(divValue);
           divCol.appendChild(divRowEntry);
   
@@ -444,7 +466,7 @@ const html = `
         });
       });
     };
-  
+
     const buildCashFlowUI = () => {
       let groups = ["income_sources", "fixed_expenses", "variable_expenses"];
       groups.forEach((group) => {
@@ -478,13 +500,11 @@ const html = `
     };
 
     const getCashCountTemplate = () => {
-      if (!_guid || !_profile) {
-        return;
-      }
-
       const params = new URLSearchParams();
-      params.set("guid", _guid);
-      params.set("profile", _profile);
+      if (_guid) {
+        params.set("guid", _guid);
+      }
+      params.set("profile", _profile ?? "template");
       let url = "/cashcount/api" + "?" + params.toString();
       fetch(url, {
         method: "GET",
@@ -493,7 +513,6 @@ const html = `
         if (res.status == 200) {
           res.json().then((data) => {
             _cash_count_template = data;
-            console.log(_cash_count_template);
             buildCashCountUI();
           });
         } else {
@@ -528,7 +547,6 @@ const html = `
         if (res.status == 200) {
           res.json().then((data) => {
             _cash_flow_template = data;
-            //console.log(_cash_flow_template);
             buildCashFlowUI();
           });
         } else {
@@ -611,7 +629,6 @@ const html = `
 
     function computeCAGR(start, end, n) {
       let cagr = Math.pow((end/start), 1/n) - 1;
-      //console.log(cagr);
       return cagr;
     }
 
@@ -634,7 +651,6 @@ const html = `
     function shareURL(path, title) {
       if (navigator.share) {
         const url = window.location.origin +"/"+ path + window.location.search;
-        console.log(url);
         navigator.share({
           title: title,
           url: url,
@@ -774,6 +790,92 @@ const html = `
       return true;
     }
 
+    function calculateDenominationTotal(group, subtotals) {
+      let total = 0;
+      const group_name = getName(group);
+      group[group_name].forEach((entry) => {
+        let el = document.getElementById(group_name +"_"+ entry.name);
+        if (el.value) {
+          const amount = parseFloat(el.value) * entry.multiplier;
+          if (subtotals[entry.name] == undefined) {
+            subtotals[entry.name] = amount;
+          } else {
+            subtotals[entry.name] += amount;
+          }
+          total += amount;
+        }
+      });
+      return total;
+    }
+
+    function calculateCashCount(subtotals = {}) {
+      const subtotalsGroupEl = document.getElementById("cashcount_subtotals_group");
+      removeChildren(subtotalsGroupEl);
+      const denominationsEl = document.getElementById("cashcount_totals");
+      removeChildren(denominationsEl);
+
+      let total = 0;
+      _cash_count_template.denominations.forEach((group) => {
+        const denominationTotal = calculateDenominationTotal(group, subtotals);
+        if (denominationTotal > 0) {
+          let li = document.createElement("li");
+          li.innerHTML = _cash_count_template.categories[getName(group)] +" = "+ CUR(denominationTotal);
+          denominationsEl.appendChild(li);
+        }
+        total += denominationTotal;
+      });
+
+      let el, elId;
+      subtotalsGroupEl.appendChild(createLabelReadonlyInput("Total Cash", "cashcount_total"));
+      el = document.getElementById("cashcount_total");
+      el.value = CUR(total);
+
+      let keys = Object.keys(subtotals);
+      if (keys.length > 1) {
+        keys = keys.sort();
+        keys.forEach((k) => {
+          elId = "cashcount_" + k;
+          subtotalsGroupEl.appendChild(createLabelReadonlyInput(_cash_count_template.categories[k], elId));
+          el = document.getElementById(elId);
+          el.value = CUR(subtotals[k]);
+        });
+      }
+
+      return true;
+    }
+
+    function exportCashCount() {
+      let data = null;
+      const subtotals = {}
+      if (calculateCashCount(subtotals)) {
+        data = {};
+        data.from_date = document.getElementById("count_from_date").valueAsDate;
+        data.to_date = document.getElementById("count_to_date").valueAsDate;
+
+        let el, elId;
+        el = document.getElementById("cashcount_total");
+        data["total_cash"] = el.value;
+
+        let keys = Object.keys(subtotals);
+        if (keys.length > 1) {
+          keys.forEach((k) => {
+            elId = "cashcount_" + k;
+            el = document.getElementById(elId);
+            data[elId] = el.value;
+          });
+        }
+
+        let parentEl = document.getElementById("cashcount_totals");
+        var children = parentEl.children;
+        for (var i=0; i < children.length; i++) {
+          el = children[i];
+          data["denomination_totals_"+(i+1)] = el.innerText;
+        }
+      }
+
+      return data;
+    }
+  
     function calculateGroupYearly(group) {
       let total = 0;
       _cash_flow_template[group].forEach((entry) => {
@@ -807,18 +909,6 @@ const html = `
       return total;
     }
 
-    function calculateCashCount() {
-      return true;
-    }
-
-    function exportCashCount() {
-      let data = null;
-      if (calculateCashCount()) {
-        data = {};
-      }
-      return data;
-    }
-  
     function calculateCashFlow() {
       let yearlyIncome = calculateGroupYearly("income_sources");
       let yearlyExpense = calculateGroupYearly("fixed_expenses") + calculateGroupYearly("variable_expenses");
@@ -898,12 +988,6 @@ async function handleRequest(request: Request): Promise<Response> {
     } else if (pathname == "/cashcount/api") {
       const guid: any = url.searchParams.get("guid");
       const profile: any = url.searchParams.get("profile");
-      if (!guid || !profile) {
-        return new Response(`Bad request`, {
-          status: 400,
-          headers: { "content-type": "text/plain" },
-        });
-      }
       return new Response(JSON.stringify(await getCashCount(guid, profile)), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
