@@ -841,6 +841,16 @@ const html = `
         });
       }
 
+      // If successful, copy over results to "Income" tab (in case it's useful)
+      if (total > 0) {
+        el = document.getElementById("from_date");
+        el.value = document.getElementById("count_from_date").value;
+        el = document.getElementById("to_date");
+        el.value = document.getElementById("count_to_date").value;
+        el = document.getElementById("income");
+        el.value = total.toFixed(2);  
+      }
+
       return true;
     }
 
