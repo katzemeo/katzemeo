@@ -63,12 +63,12 @@ export const getCashCount = async (guid: any, profile: string) => {
   }, {});
 
   const denominations = template.categories.reduce((s: any, e: any) => {
-    if (e.type) {
+    if (e.type == "denomination") {
       const name = getName(e);
       const entry: any = {};
       entry[name] = template[name].map((e: any) => ({
           name: getName(e),
-          multiplier: e.multiplier,
+          multiplier: e.multiplier ?? 1,
         }));
       s.push(entry);
     }

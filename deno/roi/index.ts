@@ -322,6 +322,11 @@ const html = `
       el.id = prefix + "_"+ entry.name;
       el.className = "form-control";
       el.type = "number";
+      if (entry.multiplier && entry.multiplier !== 1) {
+        el.placeholder = "Count";
+      } else {
+        el.placeholder = "$ Amount";
+      }
       if (entry.value !== undefined) {
         el.value = entry.value;
       }
@@ -443,9 +448,9 @@ const html = `
       const parentEl = document.getElementById("accordion-items-denominations");
       _cash_count_template.denominations.forEach((group) => {
         parentEl.appendChild(createAccordionItem(group));
-        const name = getName(group);
-        const groupEl = document.getElementById(name);
-        group[name].forEach((entry) => {
+        const group_name = getName(group);
+        const groupEl = document.getElementById(group_name);
+        group[group_name].forEach((entry) => {
           const p = document.createElement("p");
           const divRow = createDiv("row align-items-center gx-1");
           const divCol = createDiv("col");
@@ -456,7 +461,7 @@ const html = `
   
           const divRowEntry = createDiv("row align-items-center gx-1");
           const divValue = createDiv("col-5");
-          divValue.appendChild(createCountControl(name, entry));
+          divValue.appendChild(createCountControl(group_name, entry));
           divRowEntry.appendChild(divValue);
           divCol.appendChild(divRowEntry);
   
@@ -758,8 +763,9 @@ const html = `
     
       el = document.getElementById("years");
       if (el.value) {
-        let years = parseFloat(el.value);
+        let years = parseInt(el.value);
         if (years > 0 && years < 100) {
+          el.value = years;
           const cagr = computeCAGR(amount, ret, years);
           el = document.getElementById("cagr");
           el.value = PCT(cagr*100) +" %";
@@ -770,11 +776,11 @@ const html = `
           }
 
           el = document.getElementById("start_year");
-          let start_year = parseFloat(el.value);
+          let start_year = parseInt(el.value);
           if (isNaN(start_year) || start_year < 1) {
             start_year = NOW.getFullYear();
-            el.value = start_year;
           }
+          el.value = start_year;
           value = amount;
           for (let i=1; i<=years; i++) {
             value += value * cagr;
@@ -796,7 +802,12 @@ const html = `
       group[group_name].forEach((entry) => {
         let el = document.getElementById(group_name +"_"+ entry.name);
         if (el.value) {
-          const amount = parseFloat(el.value) * entry.multiplier;
+          let amount;
+          if (entry.multiplier && entry.multiplier !== 1) {
+            amount = parseFloat(el.value) * entry.multiplier;
+          } else {
+            amount = parseFloat(el.value);
+          }
           if (subtotals[entry.name] == undefined) {
             subtotals[entry.name] = amount;
           } else {
