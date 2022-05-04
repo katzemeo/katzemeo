@@ -258,7 +258,7 @@ const html = `
           <button class="btn btn-primary" type="button" onclick="shareURL('cashflow', 'ROI - Cash Flow')"><i class="fas fa-share"></i></button>
         </div>
         <p>
-          <div class="row align-items-center">
+          <div class="row align-items-end">
             <div class="col">
               <label>Monthly Income / Revenue (After Tax)</label><br>
               <input class="form-control text-muted" type="text" id="total_monthly_income" readonly="readonly"/>              
@@ -270,7 +270,7 @@ const html = `
           </div>
         </p>
         <p>
-          <div class="row align-items-center">
+          <div class="row align-items-end">
             <div class="col">
               <label>Annual Income / Revenue (After Tax)</label><br>
               <input class="form-control text-muted" type="text" id="total_annual_income" readonly="readonly"/>              
