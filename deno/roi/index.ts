@@ -142,11 +142,11 @@ const html = `
           <div class="row align-items-center">
             <div class="col">
               <label>Total Days</label><br>
-              <input class="form-control" text-muted" type="text" id="total_days" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="total_days" readonly="readonly"/>              
             </div>
             <div class="col">
               <label>Daily Average</label><br>
-              <input class="form-control" text-muted" type="text" id="daily_average" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="daily_average" readonly="readonly"/>              
             </div>
           </div>
         </p>
@@ -154,11 +154,11 @@ const html = `
           <div class="row align-items-center">
             <div class="col">
               <label>Monthly Income</label><br>
-              <input class="form-control" text-muted" type="text" id="monthly_income" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="monthly_income" readonly="readonly"/>              
             </div>
             <div class="col">
               <label>Annual Income</label><br>
-              <input class="form-control" text-muted" type="text" id="annual_income" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="annual_income" readonly="readonly"/>              
             </div>
           </div>
         </p>
@@ -237,6 +237,18 @@ const html = `
             </div>
           </div>
         </div>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>Tax Rate</label><br>
+              <input class="form-control" type="number" max="1" min="0" step="0.01" id="tax_rate"/>              
+            </div>
+            <div class="col">
+              <label>Annual Tax</label><br>
+              <input class="form-control text-muted" type="text" id="tax_amount" readonly="readonly"/>              
+            </div>
+          </div>
+        </p>
         <br/>
         <div class="d-flex justify-content-between">
           <div>
@@ -248,24 +260,24 @@ const html = `
         <p>
           <div class="row align-items-center">
             <div class="col">
-              <label>Monthly Income</label><br>
-              <input class="form-control" text-muted" type="text" id="total_monthly_income" readonly="readonly"/>              
+              <label>Monthly Income / Revenue (After Tax)</label><br>
+              <input class="form-control text-muted" type="text" id="total_monthly_income" readonly="readonly"/>              
             </div>
             <div class="col">
               <label>Monthly Expenses</label><br>
-              <input class="form-control" text-muted" type="text" id="total_monthly_expense" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="total_monthly_expense" readonly="readonly"/>              
             </div>
           </div>
         </p>
         <p>
           <div class="row align-items-center">
             <div class="col">
-              <label>Annual Income</label><br>
-              <input class="form-control" text-muted" type="text" id="total_annual_income" readonly="readonly"/>              
+              <label>Annual Income / Revenue (After Tax)</label><br>
+              <input class="form-control text-muted" type="text" id="total_annual_income" readonly="readonly"/>              
             </div>
             <div class="col">
               <label>Annual Expenses</label><br>
-              <input class="form-control" text-muted" type="text" id="total_annual_expense" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="total_annual_expense" readonly="readonly"/>              
             </div>
           </div>
         </p>
@@ -502,6 +514,11 @@ const html = `
           groupEl.appendChild(p);
         });
       });
+
+      if (_cash_flow_template.tax_rate) {
+        const el = document.getElementById("tax_rate");
+        el.value = PCT(_cash_flow_template.tax_rate);
+      }
     };
 
     const getCashCountTemplate = () => {
@@ -931,9 +948,25 @@ const html = `
     }
 
     function calculateCashFlow() {
-      let yearlyIncome = calculateGroupYearly("income_sources");
-      let yearlyExpense = calculateGroupYearly("fixed_expenses") + calculateGroupYearly("variable_expenses");
+      const yearlyGross = calculateGroupYearly("income_sources");
+      let yearlyTaxAmount = 0;
       let el;
+
+      el = document.getElementById("tax_rate");
+      if (el.value) {
+        let taxRate = parseFloat(el.value);
+        if (!isNaN(taxRate)) {
+          yearlyTaxAmount = taxRate * yearlyGross;
+          el = document.getElementById("tax_amount");
+          el.value = CUR(yearlyTaxAmount);
+        }
+      } else {
+        el = document.getElementById("tax_amount");
+        el.value = "";
+      }
+
+      const yearlyIncome = yearlyGross - yearlyTaxAmount;
+      const yearlyExpense = calculateGroupYearly("fixed_expenses") + calculateGroupYearly("variable_expenses");
 
       el = document.getElementById("total_monthly_income");
       el.value = CUR(yearlyIncome/12);

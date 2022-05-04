@@ -105,5 +105,6 @@ export const getCashFlow = async (guid: any = null, profile: string = "default")
       value: e.value,
       step: e.step,
     })),
+    tax_rate: template.tax_rate ?? 0
   };
 }
