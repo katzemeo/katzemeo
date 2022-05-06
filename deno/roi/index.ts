@@ -240,12 +240,12 @@ const html = `
         <p>
           <div class="row align-items-center">
             <div class="col">
-              <label>Tax Rate</label><br>
-              <input class="form-control" type="number" max="1" min="0" step="0.01" id="tax_rate"/>              
+              <label>Remittance Rate</label><br>
+              <input class="form-control" type="number" max="1" min="0" step="0.01" id="remittance_rate"/>              
             </div>
             <div class="col">
-              <label>Annual Tax</label><br>
-              <input class="form-control text-muted" type="text" id="tax_amount" readonly="readonly"/>              
+              <label>Annual Remittance</label><br>
+              <input class="form-control text-danger" type="text" id="remittance_amount" readonly="readonly"/>              
             </div>
           </div>
         </p>
@@ -260,7 +260,7 @@ const html = `
         <p>
           <div class="row align-items-end">
             <div class="col">
-              <label>Monthly Income / Revenue (After Tax)</label><br>
+              <label>Monthly Income / Revenue</label><br>
               <input class="form-control text-muted" type="text" id="total_monthly_income" readonly="readonly"/>              
             </div>
             <div class="col">
@@ -272,12 +272,44 @@ const html = `
         <p>
           <div class="row align-items-end">
             <div class="col">
-              <label>Annual Income / Revenue (After Tax)</label><br>
-              <input class="form-control text-muted" type="text" id="total_annual_income" readonly="readonly"/>              
+              <label>Annual Income / Revenue</label><br>
+              <input class="form-control text-primary" type="text" id="total_annual_income" readonly="readonly"/>              
             </div>
             <div class="col">
               <label>Annual Expenses</label><br>
-              <input class="form-control text-muted" type="text" id="total_annual_expense" readonly="readonly"/>              
+              <input class="form-control text-danger" type="text" id="total_annual_expense" readonly="readonly"/>              
+            </div>
+          </div>
+        </p>
+        <p>
+          <div class="row align-items-end">
+            <div class="col">
+              <label>Annual Before Remittance</label><br>
+              <input class="form-control text-muted" type="text" id="total_annual_raw" readonly="readonly"/>              
+            </div>
+            <div class="col">
+              <label>Annual After Expenses</label><br>
+              <input class="form-control" type="text" id="total_annual_after" readonly="readonly"/>              
+            </div>
+          </div>
+        </p>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>Tax Rate</label><br>
+              <input class="form-control" type="number" max="1" min="0" step="0.01" id="tax_rate"/>              
+            </div>
+            <div class="col">
+              <label>Annual Tax</label><br>
+              <input class="form-control text-danger" type="text" id="tax_amount" readonly="readonly"/>              
+            </div>
+          </div>
+        </p>
+        <p>
+          <div class="row align-items-end">
+            <div class="col">
+              <label>Annual Net (After Expenses/Tax)</label><br>
+              <input class="form-control" type="text" id="total_annual_net" readonly="readonly"/>              
             </div>
           </div>
         </p>
@@ -515,6 +547,11 @@ const html = `
         });
       });
 
+      if (_cash_flow_template.remittance_rate) {
+        const el = document.getElementById("remittance_rate");
+        el.value = PCT(_cash_flow_template.remittance_rate);
+      }
+
       if (_cash_flow_template.tax_rate) {
         const el = document.getElementById("tax_rate");
         el.value = PCT(_cash_flow_template.tax_rate);
@@ -641,7 +678,10 @@ const html = `
       }
     };
 
-    function setTextColour(el, value) {
+    function setTextColour(el, value, className = null) {
+      if (className) {
+        el.className = className;
+      }
       if (value < 0) {
         el.className += " text-danger";
       } else {
@@ -948,25 +988,27 @@ const html = `
     }
 
     function calculateCashFlow() {
-      const yearlyGross = calculateGroupYearly("income_sources");
+      const yearlyBeforeRemittance = calculateGroupYearly("income_sources");
+      let yearlyRemittanceAmount = 0;
       let yearlyTaxAmount = 0;
       let el;
 
-      el = document.getElementById("tax_rate");
+      el = document.getElementById("remittance_rate");
       if (el.value) {
-        let taxRate = parseFloat(el.value);
-        if (!isNaN(taxRate)) {
-          yearlyTaxAmount = taxRate * yearlyGross;
-          el = document.getElementById("tax_amount");
-          el.value = CUR(yearlyTaxAmount);
+        let remittanceRate = parseFloat(el.value);
+        if (!isNaN(remittanceRate)) {
+          yearlyRemittanceAmount = remittanceRate * yearlyBeforeRemittance;
+          el = document.getElementById("remittance_amount");
+          el.value = CUR(yearlyRemittanceAmount);
         }
       } else {
-        el = document.getElementById("tax_amount");
+        el = document.getElementById("remittance_amount");
         el.value = "";
       }
 
-      const yearlyIncome = yearlyGross - yearlyTaxAmount;
+      const yearlyIncome = yearlyBeforeRemittance - yearlyRemittanceAmount;
       const yearlyExpense = calculateGroupYearly("fixed_expenses") + calculateGroupYearly("variable_expenses");
+      const yearlyTaxable = yearlyIncome - yearlyExpense;
 
       el = document.getElementById("total_monthly_income");
       el.value = CUR(yearlyIncome/12);
@@ -978,21 +1020,44 @@ const html = `
       el = document.getElementById("total_annual_expense");
       el.value = CUR(yearlyExpense);
 
+      el = document.getElementById("total_annual_raw");
+      el.value = CUR(yearlyBeforeRemittance);
+      el = document.getElementById("total_annual_after");
+      el.value = CUR(yearlyTaxable);
+      setTextColour(el, yearlyTaxable, "form-control");
+
+      el = document.getElementById("tax_rate");
+      if (el.value) {
+        let taxRate = parseFloat(el.value);
+        if (!isNaN(taxRate)) {
+          yearlyTaxAmount = taxRate * yearlyTaxable;
+          el = document.getElementById("tax_amount");
+          el.value = CUR(yearlyTaxAmount);
+        }
+      } else {
+        el = document.getElementById("tax_amount");
+        el.value = "";
+      }
+
+      const yearlyNet = yearlyTaxable - yearlyTaxAmount;
+      el = document.getElementById("total_annual_net");
+      el.value = CUR(yearlyNet);
+      setTextColour(el, yearlyNet, "form-control");
+
       let parentEl = document.getElementById("cashflow_net");
       removeChildren(parentEl);
 
-      const yearly_net = yearlyIncome - yearlyExpense;
       let li = document.createElement("li");
-      li.innerText = "Daily Net = "+ CUR(yearly_net/365);
-      setTextColour(li, yearly_net);
+      li.innerText = "Daily Net = "+ CUR(yearlyNet/365);
+      setTextColour(li, yearlyNet);
       parentEl.appendChild(li);
       li = document.createElement("li");
-      li.innerText = "Monthly Net = "+ CUR(yearly_net/12);
-      setTextColour(li, yearly_net);
+      li.innerText = "Weekly Net = "+ CUR(yearlyNet/52);
+      setTextColour(li, yearlyNet);
       parentEl.appendChild(li);
       li = document.createElement("li");
-      li.innerText = "Annual Net = "+ CUR(yearly_net);
-      setTextColour(li, yearly_net);
+      li.innerText = "Monthly Net = "+ CUR(yearlyNet/12);
+      setTextColour(li, yearlyNet);
       parentEl.appendChild(li);
 
       return true;
@@ -1002,10 +1067,24 @@ const html = `
       let data = null;
       if (calculateCashFlow()) {
         data = {};
+        el = document.getElementById("remittance_rate");
+        if (el.value) {
+          data.remittance_rate = document.getElementById("remittance_rate").value;
+          data.remittance_amount = document.getElementById("remittance_amount").value;
+        }
         data.total_monthly_income = document.getElementById("total_monthly_income").value;
         data.total_monthly_expense = document.getElementById("total_monthly_expense").value;
         data.total_annual_income = document.getElementById("total_annual_income").value;
         data.total_annual_expense = document.getElementById("total_annual_expense").value;
+        data.total_annual_raw = document.getElementById("total_annual_raw").value;
+        data.total_annual_after = document.getElementById("total_annual_after").value;
+
+        el = document.getElementById("tax_rate");
+        if (el.value) {
+          data.tax_rate = document.getElementById("tax_rate").value;
+          data.tax_amount = document.getElementById("tax_amount").value;
+        }
+        data.total_annual_net = document.getElementById("total_annual_net").value;
 
         let parentEl = document.getElementById("cashflow_net");
         var children = parentEl.children;
