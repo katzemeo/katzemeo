@@ -27,7 +27,7 @@ const CASH_FLOW_SINGLE = {
 // Monthly budget based on https://itools-ioutils.fcac-acfc.gc.ca/yft-vof/eng/ieb-4-3.aspx
 const CASH_FLOW_DEFAULT = {
   income: [
-    { employment: "Employment (after deductions)", freq: {every: 2, period: "week"}, value: 2000, step: 1000 },
+    { employment: "Employment (after deductions)", freq: {every: 2, period: "week"}, value: 2500, step: 500 },
     { bonuses: "Bonuses (after deductions)", freq: {every: 1, period: "year"}, value: 5000, step: 1000 },
     { tips_commissions: "Tips or commissions", freq: {every: 1, period: "week"}, step: 100 },
     { govt_payments: "Government payments", freq: {every: 1, period: "month"}, step: 100 },

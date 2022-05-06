@@ -318,7 +318,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.2 - &copy; 04/30/2022</div>
+    <div class="text-center text-muted fs-6">v0.3 - &copy; 05/05/2022</div>
   </footer>
 
   <script>
