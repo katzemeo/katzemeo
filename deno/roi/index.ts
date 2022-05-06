@@ -644,18 +644,19 @@ const html = `
       configureTabs();
 
       let el;
+      const nowDate = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
 
       el = document.getElementById("count_from_date");
       el.valueAsDate = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - 7);
       el = document.getElementById("count_to_date");
-      el.valueAsDate = NOW;
+      el.valueAsDate = nowDate;
 
       el = document.getElementById("income");
       el.value = getFloatParam(url, "income", 1000);
       el = document.getElementById("from_date");
       el.valueAsDate = new Date(NOW.getFullYear(), 0, 1);
       el = document.getElementById("to_date");
-      el.valueAsDate = NOW;
+      el.valueAsDate = nowDate;
 
       el = document.getElementById("amount");
       el.value = getFloatParam(url, "amount", 100000);
