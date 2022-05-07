@@ -331,7 +331,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.3 - &copy; 05/05/2022</div>
+    <div class="text-center text-muted fs-6">v0.4 - &copy; 2022-05-07</div>
   </footer>
 
   <script>
@@ -541,6 +541,10 @@ const html = `
 
     const showInfo = (message) => {
       showAlert("alert-primary", "info-fill", message);
+    };
+
+    const showSuccess = (message) => {
+      showAlert("alert-success ", "check-circle-fill", message);
     };
 
     const showWarning = (message) => {
@@ -1112,6 +1116,12 @@ const html = `
       el = document.getElementById("total_annual_net");
       el.value = CUR(yearlyNet);
       setTextColour(el, yearlyNet, "form-control");
+
+      if (yearlyNet > 1000) {
+        showSuccess("Annual Net is "+ el.value);
+      } else {
+        showWarning("Annual Net is "+ el.value);
+      }
 
       let parentEl = document.getElementById("cashflow_net");
       removeChildren(parentEl);
