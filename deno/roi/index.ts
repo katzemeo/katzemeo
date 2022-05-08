@@ -12,7 +12,7 @@ const html = `
     <!-- Bootstrap CSS & Font Awesome Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
       integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-    <link href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" rel="stylesheet">
+    <link href="https://use.fontawesome.com/releases/v6.1.0/css/all.css" rel="stylesheet">
     <style>
       body {
         padding: 0;
@@ -65,7 +65,8 @@ const html = `
       <li class="nav-item" role="presentation" title="Cash Count for Date"> <button class="nav-link" name="cashcount" id="cashcount-tab" data-bs-toggle="tab" data-bs-target="#cashcount-pane" type="button" role="tab" aria-controls="cashcount-pane" aria-selected="false"><nobr><i class="fas fa-coins"></i> Cash Count</button></nobr></li>
       <li class="nav-item" role="presentation" title="Extrapolated Income from Date Range"> <button class="nav-link" name="income" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"><nobr><i class="fas fa-dollar-sign"></i> Income</button></nobr></li>
       <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" name="cagr" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"><nobr><i class="fas fa-percent"></i> CAGR</button></nobr></li>
-      <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" name="cashflow" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"><nobr><i class="fas fa-chart-line"></i> Cash Flow</nobr></button> </li>  
+      <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" name="cashflow" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"><nobr><i class="fas fa-chart-line"></i> Cash Flow</nobr></button> </li>
+      <li class="nav-item" role="presentation" title="Net Present Value (NPV)"> <button class="nav-link" name="npv" id="npv-tab" data-bs-toggle="tab" data-bs-target="#npv-pane" type="button" role="tab" aria-controls="npv-pane" aria-selected="false"><nobr><i class="fas fa-sack-dollar"></i> NPV</nobr></button> </li>
     </ul>
     <div class="border-grey bg-white p-2 tab-content">
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
@@ -204,6 +205,7 @@ const html = `
           </div>
           <button class="btn btn-primary" type="button" onclick="shareURL('cagr', 'ROI - CAGR')"><i class="fas fa-share"></i></button>
         </div>
+        <br/>
         <p>
           <label>ROI</label><br>
           <input class="form-control text-muted" type="text" id="roi" readonly="readonly"/>
@@ -262,7 +264,6 @@ const html = `
             </div>
           </div>
         </p>
-        <br/>
         <div class="d-flex justify-content-between">
           <div>
             <button class="btn btn-primary" type="button" onclick="calculateCashFlow()">Calculate!</button>
@@ -327,6 +328,36 @@ const html = `
           </div>
         </p>
         <p class="ms-3" id="cashflow_net" />
+      </div>
+      <div class="tab-pane" id="npv-pane" role="tabpanel" aria-labelledby="npv-tab">
+        <p>
+          <label>Initial Investment $</label><br>
+          <input class="form-control" type="number" min="0" step="1000" pattern="^[-/d]/d*$" id="initial_investment" maxlength="12"/>
+        </p>
+        <p>
+          <label>Required Return / Discount Rate</label><br>
+          <input class="form-control" type="number" min="0" step="0.01" pattern="^[-/d]/d*$" id="discount_rate" maxlength="12"/>
+        </p>
+        <p>
+          <label>Number of Time Periods</label><br>
+          <input class="form-control" type="number" min="1" max="100" step="1" pattern="^[-/d]/d*$" id="num_time_periods" maxlength="12"/>
+        </p>
+        <p>
+          <label>Cash Flows $</label><br>
+          <input class="form-control" type="number" step="1000" pattern="^[-/d]/d*$" id="cash_flow" maxlength="12"/>
+        </p>
+        <div class="d-flex justify-content-between">
+          <div>
+            <button class="btn btn-primary" type="button" onclick="calculateNPV()">Calculate!</button>
+            <button class="btn btn-primary" type="button" onclick="copyData(exportNPV)"><i class="fas fa-copy"></i></button>
+          </div>
+          <button class="btn btn-primary" type="button" onclick="shareURL('npv', 'ROI - NPV')"><i class="fas fa-share"></i></button>
+        </div>
+        <br/>
+        <p>
+          <label>NPV</label><br>
+          <input class="form-control text-muted" type="text" id="npv" readonly="readonly"/>
+        </p>
       </div>
     </div>
   </div>
@@ -736,6 +767,15 @@ const html = `
       el = document.getElementById("start_year");
       el.value = NOW.getFullYear();
 
+      el = document.getElementById("initial_investment");
+      el.value = getFloatParam(url, "amount", 350000);
+      el = document.getElementById("num_time_periods");
+      el.value = getFloatParam(url, "years", 5);
+      el = document.getElementById("discount_rate");
+      el.value = getFloatParam(url, "rate", 0.05);
+      el = document.getElementById("cash_flow");
+      el.value = getFloatParam(url, "cash_flow", 60000);
+
       let tab = url.searchParams.get("tab");
       if (!tab && url.pathname.length > 1) {
         tab = url.pathname.substring(1);
@@ -764,6 +804,15 @@ const html = `
     function computeCAGR(start, end, n) {
       let cagr = Math.pow((end/start), 1/n) - 1;
       return cagr;
+    }
+
+    function computeNPV(initialInvestment, discountRate, numTimePeriods, cashFlows) {
+      let pv = 0;
+      for (let t=1; t<=numTimePeriods; t++) {
+        pv += cashFlows[t-1] / Math.pow(1+discountRate, t);
+      }
+      const npv = pv - initialInvestment;
+      return npv;
     }
 
     function copyToClipboard(text) {
@@ -881,11 +930,7 @@ const html = `
       let roi = (ret - amount) / amount;
       el = document.getElementById("roi");
       el.value = PCT(roi*100) +" % or "+ CUR(ret - amount);
-      if (roi < 0) {
-        el.className = "form-control text-danger";
-      } else {
-        el.className = "form-control text-success";
-      }
+      setTextColour(el, roi, "form-control");
 
       let parentEl = document.getElementById("cagr_table");
       removeChildren(parentEl);
@@ -898,11 +943,9 @@ const html = `
           const cagr = computeCAGR(amount, ret, years);
           el = document.getElementById("cagr");
           el.value = PCT(cagr*100) +" %";
+          setTextColour(el, cagr, "form-control");
           if (cagr < 0) {
-            el.className = "form-control text-danger";
             showWarning("Compound Annual Growth Rate is Negative!");
-          } else {
-            el.className = "form-control text-success";
           }
 
           el = document.getElementById("start_year");
@@ -1173,6 +1216,50 @@ const html = `
         }
       }
       return data;
+    }
+
+    function exportNPV() {
+      let data = null;
+      if (calculateNPV()) {
+        data = {};
+        data.initial_investment = document.getElementById("initial_investment").value;
+        data.discount_rate = document.getElementById("discount_rate").value;
+        data.num_time_periods = document.getElementById("num_time_periods").value;
+        data.npv = document.getElementById("npv").value;
+      }
+      return data;
+    }
+
+    function calculateNPV() {
+      let el = document.getElementById("initial_investment");
+      let initialInvestment = parseFloat(el.value);
+      el = document.getElementById("discount_rate");
+      let discountRate = parseFloat(el.value);
+      el = document.getElementById("num_time_periods");
+      let numTimePeriods = parseInt(el.value);
+      el = document.getElementById("cash_flow");
+      let defaultCashFlow = parseFloat(el.value);
+
+      if (isNaN(initialInvestment) || initialInvestment < 0 || isNaN(discountRate) || discountRate < 0 ||
+        isNaN(numTimePeriods) || numTimePeriods <= 0 || isNaN(defaultCashFlow)) {
+        showError("Invalid inputs!");
+        return false;
+      }
+
+      let cashFlows = [];
+      for (let i=0; i<numTimePeriods; i++) {
+        cashFlows.push(defaultCashFlow);
+      }
+
+      let npv = computeNPV(initialInvestment, discountRate, numTimePeriods, cashFlows);
+      el = document.getElementById("npv");
+      el.value = CUR(npv);
+      setTextColour(el, npv, "form-control");
+      if (cagr < 0) {
+        showWarning("Net Present Value is Negative!");
+      }
+
+      return true;
     }
   </script>
   </body>
