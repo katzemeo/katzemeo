@@ -125,7 +125,7 @@ const html = `
         <br/>
         <p id="cashcount_subtotals_group">
         </p>
-        <p id="cashcount_totals" />
+        <p class="ms-3" id="cashcount_totals" />
       </div>
       <div class="tab-pane" id="income-pane" role="tabpanel" aria-labelledby="income-tab">
         <p>
@@ -212,7 +212,7 @@ const html = `
           <label>CAGR</label><br>
           <input class="form-control text-muted" type="text" id="cagr" readonly="readonly"/>
         </p>
-        <p id="cagr_table" />
+        <p class="ms-3" id="cagr_table" />
       </div>
       <div class="tab-pane" id="cashflow-pane" role="tabpanel" aria-labelledby="cashflow-tab">
         <div class="accordion">
@@ -326,7 +326,7 @@ const html = `
             </div>
           </div>
         </p>
-        <p id="cashflow_net" />
+        <p class="ms-3" id="cashflow_net" />
       </div>
     </div>
   </div>
