@@ -76,9 +76,14 @@ const html = `
           </a>
           Welcome!
         </p>
-        <p> The following tools can help you measure Return on Investments (ROI),
+        <p>
+        The following tools can help you
         <a class="text-decoration-none" href="javascript:document.getElementById('cashcount-tab').click()">Count Cash</a>,
-        calculate and assess your potential Cash Flow risks. </p>
+        measure Return on Investments (<a class="text-decoration-none" href="javascript:document.getElementById('cagr-tab').click()">ROI</a>),
+        perform <a class="text-decoration-none" href="javascript:document.getElementById('npv-tab').click()">Capital Budgeting</a>, as well as
+        calculate and assess your potential
+        <a class="text-decoration-none" href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> risks.
+        </p>
         <ul>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('income-tab').click()">Income</a> tab help calculate the daily average as well as extrapolated monthly and annual income.</li>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab help calculate the expected annual growth rate for your investments.</li>
@@ -207,11 +212,11 @@ const html = `
         </div>
         <br/>
         <p>
-          <label>ROI</label><br>
+          <label>Return on Investment (ROI)</label><br>
           <input class="form-control text-muted" type="text" id="roi" readonly="readonly"/>
         </p>
         <p>
-          <label>CAGR</label><br>
+          <label>Compound Annual Growth Rate (CAGR)</label><br>
           <input class="form-control text-muted" type="text" id="cagr" readonly="readonly"/>
         </p>
         <p class="ms-3" id="cagr_table" />
@@ -355,14 +360,14 @@ const html = `
         </div>
         <br/>
         <p>
-          <label>NPV</label><br>
+          <label>Net Present Value (NPV)</label><br>
           <input class="form-control text-muted" type="text" id="npv" readonly="readonly"/>
         </p>
       </div>
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.4 - &copy; 2022-05-07</div>
+    <div class="text-center text-muted fs-6">v0.5 - &copy; 2022-05-08</div>
   </footer>
 
   <script>
