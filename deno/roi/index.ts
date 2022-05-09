@@ -566,7 +566,7 @@ const html = `
 
       const label = document.createElement("label");
       label.innerText = labelText;
-      divCol = createDiv("col col-3");
+      divCol = createDiv("col col-4 col-sm-3 col-md-2");
       divCol.appendChild(label);
       divRowEntry.appendChild(divCol);
 
@@ -1317,7 +1317,7 @@ const html = `
             const elId = "cash_flow_" + i;
             el = document.getElementById(elId);
             data[elId] = el.value;
-          }  
+          }
         } else {
           data.cash_flow = document.getElementById("cash_flow").value;
         }
