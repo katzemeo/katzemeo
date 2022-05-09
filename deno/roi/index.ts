@@ -347,10 +347,17 @@ const html = `
           <label>Number of Time Periods</label><br>
           <input class="form-control" type="number" min="1" max="100" step="1" pattern="^[-/d]/d*$" id="num_time_periods" maxlength="12"/>
         </p>
-        <p>
-          <label>Cash Flows $</label><br>
+        <p id="cash_flow_single">
+          <label>Cash Flows $</label>
+          <button class="btn btn-primary mb-1" type="button" onclick="hideShow(expandNPVCashFlows, 'cash_flow_single', 'cash_flow_expanded')"><i class="fas fa-angles-down"></i></button>
+          <br>
           <input class="form-control" type="number" step="1000" pattern="^[-/d]/d*$" id="cash_flow" maxlength="12"/>
         </p>
+        <div class="mb-3" id="cash_flow_expanded" style="display: none;">
+          <label>Cash Flows $</label>
+          <button class="btn btn-primary mb-1" type="button" onclick="hideShow(collapseNPVCashFlows, 'cash_flow_expanded', 'cash_flow_single')"><i class="fas fa-angles-up"></i></button>
+          <div class="container" id="cash_flows"></div>
+        </div>
         <div class="d-flex justify-content-between">
           <div>
             <button class="btn btn-primary" type="button" onclick="calculateNPV()">Calculate!</button>
@@ -404,6 +411,15 @@ const html = `
         }
       }
       return defaultValue;
+    };
+
+    const hideShow = (callback, hideId, showId) => {
+      if (callback()) {
+        let el = document.getElementById(hideId);
+        el.style = "display: none";
+        el = document.getElementById(showId);
+        el.style = "display: block";  
+      }
     };
 
     const createDiv = (className=null, title=null) => {
@@ -541,6 +557,36 @@ const html = `
       divCol.appendChild(el);
       divRowEntry.appendChild(divCol);
 
+      return divRowEntry;
+    }
+
+    const createLabelNumberInput = (labelText, elementId, step=1000, min=0, max=undefined) => {
+      const divRowEntry = createDiv("row align-items-center");
+      let divCol;
+
+      const label = document.createElement("label");
+      label.innerText = labelText;
+      divCol = createDiv("col col-3");
+      divCol.appendChild(label);
+      divRowEntry.appendChild(divCol);
+
+      const el = document.createElement("input");
+      el.type = "number";
+      el.id = elementId;
+      el.className = "form-control";
+      if (!isNaN(min)) {
+        el.min = min;
+      }
+      if (!isNaN(max)) {
+        el.max = max;
+      }
+      if (!isNaN(step)) {
+        el.step = step;
+      }
+      divCol = createDiv("col");
+      divCol.appendChild(el);
+      divRowEntry.appendChild(divCol);
+     
       return divRowEntry;
     }
 
@@ -775,11 +821,11 @@ const html = `
       el = document.getElementById("initial_investment");
       el.value = getFloatParam(url, "amount", 350000);
       el = document.getElementById("num_time_periods");
-      el.value = getFloatParam(url, "years", 5);
+      el.value = getFloatParam(url, "years", 10);
       el = document.getElementById("discount_rate");
-      el.value = getFloatParam(url, "rate", 0.05);
+      el.value = getFloatParam(url, "rate", 0.09);
       el = document.getElementById("cash_flow");
-      el.value = getFloatParam(url, "cash_flow", 60000);
+      el.value = getFloatParam(url, "cash_flow", 48000);
 
       let tab = url.searchParams.get("tab");
       if (!tab && url.pathname.length > 1) {
@@ -812,11 +858,10 @@ const html = `
     }
 
     function computeNPV(initialInvestment, discountRate, numTimePeriods, cashFlows) {
-      let pv = 0;
+      let npv = -initialInvestment;
       for (let t=1; t<=numTimePeriods; t++) {
-        pv += cashFlows[t-1] / Math.pow(1+discountRate, t);
+        npv += cashFlows[t-1] / Math.pow(1+discountRate, t);
       }
-      const npv = pv - initialInvestment;
       return npv;
     }
 
@@ -1187,6 +1232,12 @@ const html = `
       setTextColour(li, yearlyNet);
       parentEl.appendChild(li);
 
+      // If successful, copy over yearly net to "NPV" tab (in case it's useful)
+      if (yearlyNet > 0) {
+        el = document.getElementById("cash_flow");
+        el.value = yearlyNet.toFixed(2);
+      }
+
       return true;
     }
 
@@ -1223,6 +1274,36 @@ const html = `
       return data;
     }
 
+    function expandNPVCashFlows() {
+      const parentEl = collapseNPVCashFlows();
+
+      let el = document.getElementById("num_time_periods");
+      let numTimePeriods = parseInt(el.value);
+      if (numTimePeriods <= 20) {
+        el = document.getElementById("cash_flow");
+        let cashFlow = parseFloat(el.value);
+        if (isNaN(cashFlow)) {
+          cashFlow = "";
+        }
+        for (let i=1; i<=numTimePeriods; i++) {
+          const elId = "cash_flow_" + i;
+          parentEl.appendChild(createLabelNumberInput("Period "+ i, elId));
+          el = document.getElementById(elId);
+          el.value = cashFlow;
+        }
+      } else {
+        showWarning("Maximum Number of Time Periods is 20");
+        return false
+      }
+      return true;
+    }
+
+    function collapseNPVCashFlows() {
+      const parentEl = document.getElementById("cash_flows");
+      removeChildren(parentEl);
+      return parentEl;
+    }
+
     function exportNPV() {
       let data = null;
       if (calculateNPV()) {
@@ -1252,8 +1333,17 @@ const html = `
       }
 
       let cashFlows = [];
-      for (let i=0; i<numTimePeriods; i++) {
-        cashFlows.push(defaultCashFlow);
+      for (let i=1; i<=numTimePeriods; i++) {
+        const elId = "cash_flow_" + i;
+        let cashFlow = defaultCashFlow;
+        el = document.getElementById(elId);
+        if (el) {
+          let cashFlowValue = parseFloat(el.value);
+          if (!isNaN(cashFlowValue)) {
+            cashFlow = cashFlowValue;
+          }
+        }
+        cashFlows.push(cashFlow);
       }
 
       let npv = computeNPV(initialInvestment, discountRate, numTimePeriods, cashFlows);
