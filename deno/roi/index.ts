@@ -1311,6 +1311,17 @@ const html = `
         data.initial_investment = document.getElementById("initial_investment").value;
         data.discount_rate = document.getElementById("discount_rate").value;
         data.num_time_periods = document.getElementById("num_time_periods").value;
+        if (document.getElementById("cash_flow_1")) {
+          numTimePeriods = parseInt(data.num_time_periods);
+          for (let i=1; i<=numTimePeriods; i++) {
+            const elId = "cash_flow_" + i;
+            el = document.getElementById(elId);
+            data[elId] = el.value;
+          }  
+        } else {
+          data.cash_flow = document.getElementById("cash_flow").value;
+        }
+
         data.npv = document.getElementById("npv").value;
       }
       return data;
