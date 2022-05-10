@@ -345,7 +345,7 @@ const html = `
         </p>
         <p>
           <label>Number of Time Periods</label><br>
-          <input class="form-control" type="number" min="1" max="100" step="1" pattern="^[-/d]/d*$" id="num_time_periods" maxlength="12"/>
+          <input class="form-control" type="number" min="1" max="1000" step="1" pattern="^[-/d]/d*$" id="num_time_periods" maxlength="12"/>
         </p>
         <p id="cash_flow_single">
           <label>Cash Flows $</label>
@@ -358,6 +358,10 @@ const html = `
           <button class="btn btn-primary mb-1" type="button" onclick="hideShow(collapseNPVCashFlows, 'cash_flow_expanded', 'cash_flow_single')"><i class="fas fa-angles-up"></i></button>
           <div class="container" id="cash_flows"></div>
         </div>
+        <p>
+          <label>Residual / Salvage Value $</label><br>
+          <input class="form-control" type="number" min="0" step="1000" pattern="^[-/d]/d*$" id="residual_value" maxlength="12"/>
+        </p>
         <div class="d-flex justify-content-between">
           <div>
             <button class="btn btn-primary" type="button" onclick="calculateNPV()">Calculate!</button>
@@ -826,6 +830,8 @@ const html = `
       el.value = getFloatParam(url, "rate", 0.09);
       el = document.getElementById("cash_flow");
       el.value = getFloatParam(url, "cash_flow", 48000);
+      el = document.getElementById("residual_value");
+      el.value = getFloatParam(url, "residual", 250000);
 
       let tab = url.searchParams.get("tab");
       if (!tab && url.pathname.length > 1) {
@@ -1292,7 +1298,7 @@ const html = `
           el.value = cashFlow;
         }
       } else {
-        showWarning("Maximum Number of Time Periods is 20");
+        showWarning("Maximum Expanded Time Periods is 20");
         return false
       }
       return true;
@@ -1322,6 +1328,7 @@ const html = `
           data.cash_flow = document.getElementById("cash_flow").value;
         }
 
+        data.residual_value = document.getElementById("residual_value").value;
         data.npv = document.getElementById("npv").value;
       }
       return data;
@@ -1337,10 +1344,22 @@ const html = `
       el = document.getElementById("cash_flow");
       let defaultCashFlow = parseFloat(el.value);
 
+      el = document.getElementById("residual_value");
+      let residualValue = parseFloat(el.value);
+      if (isNaN(residualValue)) {
+        residualValue = 0;
+        el.value = "";
+      }
+
       if (isNaN(initialInvestment) || initialInvestment < 0 || isNaN(discountRate) || discountRate < 0 ||
         isNaN(numTimePeriods) || numTimePeriods <= 0 || isNaN(defaultCashFlow)) {
         showError("Invalid inputs!");
         return false;
+      }
+
+      if (numTimePeriods > 1000) {
+        showWarning("Maximum Number of Time Periods is 1000");
+        return false
       }
 
       let cashFlows = [];
@@ -1353,6 +1372,9 @@ const html = `
           if (!isNaN(cashFlowValue)) {
             cashFlow = cashFlowValue;
           }
+        }
+        if (i === numTimePeriods) {
+          cashFlow += residualValue;
         }
         cashFlows.push(cashFlow);
       }
