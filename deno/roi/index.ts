@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
 import { open } from "https://deno.land/x/open/index.ts";
 import { getCashCount } from "./cash_count.ts";
 import { getCashFlow } from "./cash_flow.ts";
+import { getSAFactors } from "./seasonally_adjusted.ts";
 
 const html = `
 <!DOCTYPE html>
@@ -85,7 +86,7 @@ const html = `
         <a class="text-decoration-none" href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> risks.
         </p>
         <ul>
-          <li>The <a class="text-decoration-none" href="javascript:document.getElementById('income-tab').click()">Income</a> tab help calculate the daily average as well as extrapolated monthly and annual income.</li>
+          <li>The <a class="text-decoration-none" href="javascript:document.getElementById('income-tab').click()">Income</a> tab help calculate the daily average as well as extrapolated (seasonally adjusted) monthly and annual income.</li>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('cagr-tab').click()">CAGR</a> tab help calculate the expected annual growth rate for your investments.</li>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('cashflow-tab').click()">Cash Flow</a> tab help check if your income is sufficient after expenses.</li>
         </ul>
@@ -150,6 +151,19 @@ const html = `
             </div>
           </div>
         </p>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <input class="form-check-input" id="seasonally_adjusted_cb" title="Adjust for Seaons" onchange="calculateIncome()" type="checkbox" value="" />
+              <label>Seasonally Adjusted $</label><br>
+              <input class="form-control text-muted" type="text" id="seasonally_adjusted_income" readonly="readonly"/>
+            </div>
+            <div class="col">
+              <label>Adjustment Factor(s)</label><br>
+              <input class="form-control text-muted" type="text" id="seasonally_adjusted_factor" readonly="readonly"/>           
+            </div>
+          </div>
+        </p>
         <div class="d-flex justify-content-between">
           <div>
             <button class="btn btn-primary" type="button" onclick="calculateIncome()">Calculate!</button>
@@ -161,11 +175,11 @@ const html = `
           <div class="row align-items-center">
             <div class="col">
               <label>Total Days</label><br>
-              <input class="form-control text-muted" type="text" id="total_days" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="total_days" readonly="readonly"/>
             </div>
             <div class="col">
               <label>Daily Average</label><br>
-              <input class="form-control text-muted" type="text" id="daily_average" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="daily_average" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -173,11 +187,11 @@ const html = `
           <div class="row align-items-center">
             <div class="col">
               <label>Monthly Income</label><br>
-              <input class="form-control text-muted" type="text" id="monthly_income" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="monthly_income" readonly="readonly"/>
             </div>
             <div class="col">
               <label>Annual Income</label><br>
-              <input class="form-control text-muted" type="text" id="annual_income" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="annual_income" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -265,7 +279,7 @@ const html = `
             </div>
             <div class="col">
               <label>Annual Remittance</label><br>
-              <input class="form-control text-danger" type="text" id="remittance_amount" readonly="readonly"/>              
+              <input class="form-control text-danger" type="text" id="remittance_amount" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -280,11 +294,11 @@ const html = `
           <div class="row align-items-end">
             <div class="col">
               <label>Monthly Income / Revenue</label><br>
-              <input class="form-control text-muted" type="text" id="total_monthly_income" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="total_monthly_income" readonly="readonly"/>
             </div>
             <div class="col">
               <label>Monthly Expenses</label><br>
-              <input class="form-control text-muted" type="text" id="total_monthly_expense" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="total_monthly_expense" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -292,11 +306,11 @@ const html = `
           <div class="row align-items-end">
             <div class="col">
               <label>Annual Income / Revenue</label><br>
-              <input class="form-control text-primary" type="text" id="total_annual_income" readonly="readonly"/>              
+              <input class="form-control text-primary" type="text" id="total_annual_income" readonly="readonly"/>
             </div>
             <div class="col">
               <label>Annual Expenses</label><br>
-              <input class="form-control text-danger" type="text" id="total_annual_expense" readonly="readonly"/>              
+              <input class="form-control text-danger" type="text" id="total_annual_expense" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -304,11 +318,11 @@ const html = `
           <div class="row align-items-end">
             <div class="col">
               <label>Annual Before Remittance</label><br>
-              <input class="form-control text-muted" type="text" id="total_annual_raw" readonly="readonly"/>              
+              <input class="form-control text-muted" type="text" id="total_annual_raw" readonly="readonly"/>
             </div>
             <div class="col">
               <label>Annual After Expenses</label><br>
-              <input class="form-control" type="text" id="total_annual_after" readonly="readonly"/>              
+              <input class="form-control" type="text" id="total_annual_after" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -320,7 +334,7 @@ const html = `
             </div>
             <div class="col">
               <label>Annual Tax</label><br>
-              <input class="form-control text-danger" type="text" id="tax_amount" readonly="readonly"/>              
+              <input class="form-control text-danger" type="text" id="tax_amount" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -328,7 +342,7 @@ const html = `
           <div class="row align-items-end">
             <div class="col">
               <label>Annual Net (After Expenses/Tax)</label><br>
-              <input class="form-control" type="text" id="total_annual_net" readonly="readonly"/>              
+              <input class="form-control" type="text" id="total_annual_net" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -378,7 +392,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.5 - &copy; 2022-05-08</div>
+    <div class="text-center text-muted fs-6">v0.6 - &copy; 2022-05-11</div>
   </footer>
 
   <script>
@@ -394,6 +408,7 @@ const html = `
     var _guid = null;
     var _profile = null;
     var _cash_count_template = null;
+    var _income_sa_factors = null;
     var _cash_flow_template = null;
 
     const formatDate = (dt, timeZone = TIME_ZONE) => {
@@ -737,6 +752,34 @@ const html = `
       });
     };
   
+    const getIncomeSAFactors = () => {
+      const params = new URLSearchParams();
+      if (_guid) {
+        params.set("guid", _guid);
+      }
+      if (_profile) {
+        params.set("profile", _profile);
+      }
+      let url = "/income/safactors" + "?" + params.toString();
+      fetch(url, {
+        method: "GET",
+        headers: JSON_HEADERS,
+      }).then((res) => {
+        if (res.status == 200) {
+          res.json().then((data) => {
+            _income_sa_factors = data;
+          });
+        } else {
+          showError("Unable to lookup Income Seasonally Adjusted factors.");
+          console.log("Unexpected response", res.status);
+        }
+      }).catch((error) => {
+        console.error(error);
+        window.alert("Unable to get cash count template.  Please try again.");
+      });
+    };
+    
+
     const getCashFlowTemplate = () => {
       let url;
       const params = new URLSearchParams();
@@ -780,6 +823,10 @@ const html = `
           if (event.target && event.target.name === "cashcount") {
             if (!_cash_count_template) {
               getCashCountTemplate();
+            }
+          } else if (event.target && event.target.name === "income") {
+            if (!_income_sa_factors) {
+              getIncomeSAFactors();
             }
           } else if (event.target && event.target.name === "cashflow") {
             if (!_cash_flow_template) {
@@ -920,26 +967,67 @@ const html = `
     }
 
     function calculateIncome() {
-      let el = document.getElementById("income");
-      let income = parseFloat(el.value);
       try {
+        let el = document.getElementById("income");
+        let income = parseFloat(el.value);  
         el = document.getElementById("from_date");
-        const fromDate = el.valueAsDate.getTime();
+        const fromDateTime = el.valueAsDate;
         el = document.getElementById("to_date");
-        const toDate = el.valueAsDate.getTime();
-        const delta = toDate - fromDate;
+        const toDateTime = el.valueAsDate.getTime();
+        el = document.getElementById("seasonally_adjusted_cb");
+        const seasonallyAdjust = el.checked;
+        const delta = toDateTime - fromDateTime;
         if (isNaN(income) || isNaN(delta) || delta < 0) {
-          alert("Invalid inputs!");
+          showError("Invalid Income or Date range.");
         } else {
           let days = 1 + (delta / 1000 / 60 / 60 / 24);
           el = document.getElementById("total_days");
           el.value = days;
 
           let average = income / days;
-          el = document.getElementById("daily_average");
-          el.value = CUR(average);
-
           let annual_income = average * 365;
+          if (seasonallyAdjust && _income_sa_factors) {
+            let dt = new Date(fromDateTime);
+            let count = 0;
+            let saFactors = "";
+            while (dt.getTime() <= toDateTime) {
+              if (count < 2) {
+                if (count > 0) {
+                  saFactors += ", ";  
+                }
+                saFactors += _income_sa_factors[dt.getUTCMonth() + 1].toFixed(5);
+              }
+              dt.setMonth(dt.getMonth() + 1);
+              count++;
+            }
+
+            if (count > 2) {
+              saFactors += "...";
+            }
+
+            dt = new Date(fromDateTime);
+            const sa_average = income / count;
+            income = 0;
+            while (dt.getTime() <= toDateTime) {
+              income += sa_average / _income_sa_factors[dt.getUTCMonth() + 1];
+              dt.setMonth(dt.getMonth() + 1);
+            }
+            average = income / days;
+            annual_income = average * 365;
+
+            el = document.getElementById("seasonally_adjusted_income");
+            el.value = CUR(income);
+            el = document.getElementById("seasonally_adjusted_factor");
+            el.value = saFactors + " (count=" + count + ")";
+          } else {
+            el = document.getElementById("seasonally_adjusted_income");
+            el.value = "";
+            el = document.getElementById("seasonally_adjusted_factor");
+            el.value = "";
+          }
+
+          el = document.getElementById("daily_average");
+          el.value = CUR(annual_income/365);
           el = document.getElementById("monthly_income");
           el.value = CUR(annual_income/12);
           el = document.getElementById("annual_income");
@@ -1396,15 +1484,14 @@ const html = `
 async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const pathname = url.pathname;
+  const guid: any = url.searchParams.get("guid");
+  const profile: any = url.searchParams.get("profile");
   try {
     if (pathname == "/ping") {
       return new Response(`OK`);
     } else if (pathname == "/cashflow/template") {
-      const profile: any = url.searchParams.get("profile");
       return new Response(JSON.stringify(await getCashFlow(null, profile)), { headers: { 'Content-Type': 'application/json' } });
     } else if (pathname == "/cashflow/api") {
-      const guid: any = url.searchParams.get("guid");
-      const profile: any = url.searchParams.get("profile");
       if (!guid || !profile) {
         return new Response(`Bad request`, {
           status: 400,
@@ -1413,9 +1500,9 @@ async function handleRequest(request: Request): Promise<Response> {
       }
       return new Response(JSON.stringify(await getCashFlow(guid, profile)), { headers: { 'Content-Type': 'application/json' } });
     } else if (pathname == "/cashcount/api") {
-      const guid: any = url.searchParams.get("guid");
-      const profile: any = url.searchParams.get("profile");
       return new Response(JSON.stringify(await getCashCount(guid, profile)), { headers: { 'Content-Type': 'application/json' } });
+    } else if (pathname == "/income/safactors") {
+      return new Response(JSON.stringify(await getSAFactors(guid, profile)), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
   } catch (error) {
