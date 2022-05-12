@@ -155,7 +155,7 @@ const html = `
           <div class="row align-items-center">
             <div class="col">
               <input class="form-check-input" id="seasonally_adjusted_cb" title="Adjust for Seaons" onchange="calculateIncome()" type="checkbox" value="" />
-              <label>Seasonally Adjusted $</label><br>
+              <label>Season Adjusted $</label><br>
               <input class="form-control text-muted" type="text" id="seasonally_adjusted_income" readonly="readonly"/>
             </div>
             <div class="col">
@@ -958,6 +958,8 @@ const html = `
         data.income = document.getElementById("income").value;
         data.from_date = document.getElementById("from_date").valueAsDate;
         data.to_date = document.getElementById("to_date").valueAsDate;
+        data.seasonally_adjusted_income = document.getElementById("seasonally_adjusted_income").value;
+        data.seasonally_adjusted_factor = document.getElementById("seasonally_adjusted_factor").value;
         data.total_days = document.getElementById("total_days").value;
         data.daily_average = document.getElementById("daily_average").value;
         data.monthly_income = document.getElementById("monthly_income").value;
@@ -991,7 +993,7 @@ const html = `
             let count = 0;
             let saFactors = "";
             while (dt.getTime() <= toDateTime) {
-              if (count < 2) {
+              if (count < 1) {
                 if (count > 0) {
                   saFactors += ", ";  
                 }
@@ -1001,7 +1003,7 @@ const html = `
               count++;
             }
 
-            if (count > 2) {
+            if (count > 1) {
               saFactors += "...";
             }
 
