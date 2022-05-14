@@ -37,7 +37,7 @@ const html = `
         color: #666
       }
     </style>
-    <title id="title">ROI Calculator @katzemeo</title>
+    <title id="title">Calculators @katzemeo</title>
     <link rel="icon" href="https://invest.npsolve.com/public/favicon.ico">
 
     <!-- Option 1: Bootstrap Bundle with Popper -->
@@ -63,7 +63,7 @@ const html = `
     </div>
     <ul class="m-0 nav nav-fill nav-justified nav-tabs" id="tab-nav" role="tablist">
       <li class="nav-item" role="presentation" title="Introduction and Notes"> <button class="active nav-link" name="home" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-pane" type="button" role="tab" aria-controls="home-pane" aria-selected="true"><nobr><i class="fas fa-home"></i> Home</button></nobr></li>
-      <li class="nav-item" role="presentation" title="Cash Count for Date"> <button class="nav-link" name="cashcount" id="cashcount-tab" data-bs-toggle="tab" data-bs-target="#cashcount-pane" type="button" role="tab" aria-controls="cashcount-pane" aria-selected="false"><nobr><i class="fas fa-coins"></i> Cash Count</button></nobr></li>
+      <li class="nav-item" role="presentation" title="Cash Count for Date Range"> <button class="nav-link" name="cashcount" id="cashcount-tab" data-bs-toggle="tab" data-bs-target="#cashcount-pane" type="button" role="tab" aria-controls="cashcount-pane" aria-selected="false"><nobr><i class="fas fa-coins"></i> Cash Count</button></nobr></li>
       <li class="nav-item" role="presentation" title="Extrapolated Income from Date Range"> <button class="nav-link" name="income" id="income-tab" data-bs-toggle="tab" data-bs-target="#income-pane" type="button" role="tab" aria-controls="income-pane" aria-selected="false"><nobr><i class="fas fa-dollar-sign"></i> Income</button></nobr></li>
       <li class="nav-item" role="presentation" title="Compound Annual Growth Rate (CAGR)"> <button class="nav-link" name="cagr" id="cagr-tab" data-bs-toggle="tab" data-bs-target="#cagr-pane" type="button" role="tab" aria-controls="cagr-pane" aria-selected="false"><nobr><i class="fas fa-percent"></i> CAGR</button></nobr></li>
       <li class="nav-item" role="presentation" title="Cash Flow Analysis"> <button class="nav-link" name="cashflow" id="cashflow-tab" data-bs-toggle="tab" data-bs-target="#cashflow-pane" type="button" role="tab" aria-controls="cashflow-pane" aria-selected="false"><nobr><i class="fas fa-chart-line"></i> Cash Flow</nobr></button> </li>
@@ -570,7 +570,7 @@ const html = `
 
       const el = document.createElement("input");
       el.type = "text";
-      el.readonly = "readonly";
+      el.setAttribute("readonly", "readonly");
       el.id = elementId;
       el.className = "form-control text-muted";
       divCol.appendChild(el);
@@ -778,7 +778,6 @@ const html = `
         window.alert("Unable to get cash count template.  Please try again.");
       });
     };
-    
 
     const getCashFlowTemplate = () => {
       let url;
@@ -837,6 +836,22 @@ const html = `
           //event.relatedTarget // previous active tab
         });
       });
+    };
+
+    const parseFromToDates = (from, to, msg="Invalid Date(s) and/or Date Range.") => {
+      let fromEl = document.getElementById(from);
+      let toEl = document.getElementById(to);
+      if (!fromEl.value || !toEl.value) {
+        showError(msg);
+        return { success: false };
+      }
+      const fromDateTime = fromEl.valueAsDate.getTime();
+      const toDateTime = toEl.valueAsDate.getTime();
+      const delta = toDateTime - fromDateTime;
+      if (isNaN(delta) || delta < 0) {
+        showError(msg);
+      }
+      return { fromDateTime: fromDateTime, toDateTime: toDateTime, success: delta >= 0 };
     };
 
     window.onload = function () {
@@ -971,17 +986,20 @@ const html = `
     function calculateIncome() {
       try {
         let el = document.getElementById("income");
-        let income = parseFloat(el.value);  
-        el = document.getElementById("from_date");
-        const fromDateTime = el.valueAsDate;
-        el = document.getElementById("to_date");
-        const toDateTime = el.valueAsDate.getTime();
-        el = document.getElementById("seasonally_adjusted_cb");
-        const seasonallyAdjust = el.checked;
-        const delta = toDateTime - fromDateTime;
-        if (isNaN(income) || isNaN(delta) || delta < 0) {
-          showError("Invalid Income or Date range.");
+        let income = parseFloat(el.value);
+
+        if (isNaN(income)) {
+          showError("Invalid Income.");
+          return false;
         } else {
+          const { fromDateTime, toDateTime, success } = parseFromToDates("from_date", "to_date");
+          if (!success) {
+            return false;
+          }
+          el = document.getElementById("seasonally_adjusted_cb");
+          const seasonallyAdjust = el.checked;
+  
+          const delta = toDateTime - fromDateTime;
           let days = 1 + (delta / 1000 / 60 / 60 / 24);
           el = document.getElementById("total_days");
           el.value = days;
@@ -1139,6 +1157,11 @@ const html = `
     }
 
     function calculateCashCount(subtotals = {}) {
+      const { success } = parseFromToDates("count_from_date", "count_to_date");
+      if (!success) {
+        return false;
+      }
+
       const subtotalsGroupEl = document.getElementById("cashcount_subtotals_group");
       removeChildren(subtotalsGroupEl);
       const denominationsEl = document.getElementById("cashcount_totals");
@@ -1241,7 +1264,7 @@ const html = `
           } else if (periodEl.value === "month") {
             factor = 12 / freq;
           } else if (freq > 1) {
-            freqEl.value = 1;
+            factor /= freq;
           }
           total += value * factor;
         }

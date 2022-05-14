@@ -78,6 +78,28 @@ const html = `
         <p>
         The following application can help you better track your expenses and help ensure a positive cash flow.
         </p>
+        <div id="total_expenses" class="mb-3" style="display: none;">
+          <div class="row align-items-end">
+            <div class="col">
+              <label>Annual Expenses</label><br>
+              <input class="form-control text-danger" type="text" id="total_annual_expense" readonly="readonly"/>
+            </div>
+            <div class="col">
+              <label>Monthly Expenses</label><br>
+              <input class="form-control text-danger" type="text" id="total_monthly_expense" readonly="readonly"/>
+            </div>
+          </div>
+          <div class="row align-items-end">
+            <div class="col">
+              <label>Weekly Expenses</label><br>
+              <input class="form-control text-danger" type="text" id="total_weekly_expense" readonly="readonly"/>
+            </div>
+            <div class="col">
+              <label>Daily Expenses</label><br>
+              <input class="form-control text-danger" type="text" id="total_daily_expense" readonly="readonly"/>
+            </div>
+          </div>
+        </div>
         <ul>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('variable-tab').click()">Variable</a> tab is used to track expenses that varies from month to month (e.g. utilities, groceries).</li>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('fixed-tab').click()">Fixed</a> tab is used to track all your fixed expenses (e.g. rent, internet).</li>
@@ -207,6 +229,7 @@ const html = `
       if (entry.pattern) {
         el.pattern = entry.pattern;
       }
+      el.setAttribute("onchange", "calculateTotal()");
       return el;
     };
 
@@ -219,6 +242,7 @@ const html = `
       el.min = 1;
       el.max = 99;
       el.pattern = "^/d+$";
+      el.setAttribute("onchange", "calculateTotal()");
       return el;
     };
   
@@ -240,6 +264,7 @@ const html = `
       el.appendChild(createOption("week", "Week", entry.freq.period));
       el.appendChild(createOption("month", "Month", entry.freq.period));
       el.appendChild(createOption("year", "Year", entry.freq.period));
+      el.setAttribute("onchange", "calculateTotal()");
       return el;
     };
 
@@ -275,21 +300,28 @@ const html = `
       return divAccordionItem;
     };
 
+    const createReadonlyInput = (elementId) => {
+      const el = document.createElement("input");
+      el.type = "text";
+      el.setAttribute("readonly", "readonly");
+      el.id = elementId;
+      el.className = "form-control text-danger";
+      return el;
+    }
+
     const createLabelReadonlyInput = (labelText, elementId) => {
-      const divRowEntry = createDiv("row align-items-center");
       const divCol = createDiv("col");
       const label = document.createElement("label");
       label.innerText = labelText;
       divCol.appendChild(label);
+      divCol.appendChild(createReadonlyInput(elementId));
+      return divCol;
+    }
 
-      const el = document.createElement("input");
-      el.type = "text";
-      el.readonly = "readonly";
-      el.id = elementId;
-      el.className = "form-control text-muted";
-      divCol.appendChild(el);
-      divRowEntry.appendChild(divCol);
-
+    const createLabelReadonlyInputs = (labelText1, elementId1, labelText2, elementId2) => {
+      const divRowEntry = createDiv("row align-items-center");
+      divRowEntry.appendChild(createLabelReadonlyInput(labelText1, elementId1));
+      divRowEntry.appendChild(createLabelReadonlyInput(labelText2, elementId2));
       return divRowEntry;
     }
 
@@ -369,6 +401,8 @@ const html = `
       let groups = ["variable", "fixed", "intermittent", "discretionary"];
       groups.forEach((group) => {
         const groupEl = document.getElementById(group +"_expenses");
+        groupEl.appendChild(createLabelReadonlyInputs("Annual Total", group +"_annual_total", "Monthly Total", group +"_monthly_total"));
+        groupEl.appendChild(document.createElement("br"));
         _expense_template[group].forEach((entry) => {
           const p = document.createElement("p");
           const divRow = createDiv("row align-items-center gx-1");
@@ -411,8 +445,8 @@ const html = `
         if (res.status == 200) {
           res.json().then((data) => {
             _expense_template = data;
-            console.log(data);
             buildExpenseUI();
+            calculateTotal();
           });
         } else {
           showError("Unable to lookup Expense template.");
@@ -499,6 +533,66 @@ const html = `
       } else {
         alert("Share not supported!");
       }
+    }
+
+    function calculateGroupYearly(group) {
+      let total = 0;
+      group.forEach((entry) => {
+        let el = document.getElementById(entry.name);
+        if (el.value) {
+          const freqEl = document.getElementById(entry.name+"_freq");
+          const periodEl = document.getElementById(entry.name+"_period");
+          let value = parseFloat(el.value);
+          if (isNaN(value) || value < 0) {
+            value = 0;
+            el.value = value;
+          }
+          let freq = parseInt(freqEl.value);
+          if (isNaN(freq) || freq < 1) {
+            freq = 1;
+            freqEl.value = freq;
+          }
+          let factor = 1;
+          if (periodEl.value === "day") {
+            factor = 365 / freq;
+          } else if (periodEl.value === "week") {
+            factor = 52 / freq;
+          } else if (periodEl.value === "month") {
+            factor = 12 / freq;
+          } else if (freq > 1) {
+            factor /= freq;
+          }
+          total += value * factor;
+        }
+      });
+      return total;
+    }
+
+    function calculateTotal(subtotals = {}) {
+      let total = 0;
+      Object.keys(_expense_template).forEach((name) => {
+        const group = _expense_template[name];
+        const groupTotal = calculateGroupYearly(group);
+
+        let el = document.getElementById(name +"_annual_total");
+        el.value = CUR(groupTotal);
+        el = document.getElementById(name +"_monthly_total");
+        el.value = CUR(groupTotal/12);
+        total += groupTotal;
+      });
+
+      const groupEl = document.getElementById("total_expenses");
+      groupEl.style = "display: block"; 
+      let totalEl = document.getElementById("total_annual_expense");
+      totalEl.value = CUR(total);
+      totalEl = document.getElementById("total_monthly_expense");
+      totalEl.value = CUR(total/12);
+      totalEl = document.getElementById("total_weekly_expense");
+      totalEl.value = CUR(total/52);
+      totalEl = document.getElementById("total_daily_expense");
+      totalEl.value = CUR(total/365);
+
+      return true;
     }
   </script>
   </body>
