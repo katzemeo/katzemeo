@@ -5,3 +5,4 @@ deno/alphavantage/.env.local
 deno/mongodb/.env.local
 deno/banking/csvCategorize.exe
 deno/roi/roi.exe
+deno/expense/expense.exe

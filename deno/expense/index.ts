@@ -65,16 +65,23 @@ const html = `
       <li class="nav-item" role="presentation" title="Fixed Expenses"> <button class="nav-link" name="fixed" id="fixed-tab" data-bs-toggle="tab" data-bs-target="#fixed-pane" type="button" role="tab" aria-controls="fixed-pane" aria-selected="false"><nobr><i class="fas fa-dollar-sign"></i> Fixed</button></nobr></li>
       <li class="nav-item" role="presentation" title="Intermittent Expenses"> <button class="nav-link" name="intermittent" id="intermittent-tab" data-bs-toggle="tab" data-bs-target="#intermittent-pane" type="button" role="tab" aria-controls="intermittent-pane" aria-selected="false"><nobr><i class="fas fa-sack-dollar"></i> Intermittent</nobr></button> </li>
       <li class="nav-item" role="presentation" title="Discretionary Expenses"> <button class="nav-link" name="discretionary" id="discretionary-tab" data-bs-toggle="tab" data-bs-target="#discretionary-pane" type="button" role="tab" aria-controls="discretionary-pane" aria-selected="false"><nobr><i class="fas fa-coins"></i> Discretionary</button></nobr></li>
-
     </ul>
     <div class="border-grey bg-white p-2 tab-content">
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
-        <p class="fw-bold">
-          <a class="text-decoration-none" target="katzemeo" href="https://twitter.com/katzemeo" title='Follow "Silvester the Invester" on Twitter @katzemeo'>
-            <img src="https://invest.npsolve.com/public/silvester.png" alt="Silvester" width="48" height="48">
-          </a>
-          Welcome!
-        </p>
+        <div class="d-flex justify-content-between">
+          <div>
+            <p class="fw-bold">
+              <a class="text-decoration-none" target="katzemeo" href="https://twitter.com/katzemeo" title='Follow "Silvester the Invester" on Twitter @katzemeo'>
+                <img src="https://invest.npsolve.com/public/silvester.png" alt="Silvester" width="48" height="48">
+              </a>
+              Welcome!
+            </p>
+          </div>
+          <div>
+            <button class="btn btn-primary mb-1" type="button" onclick="clearAllValues()" title="Clear All Values"><i class="fa-solid fa-rotate"></i></button>
+            <button class="btn btn-primary mb-1" type="button" onclick="deleteLocalStorage()" title="Delete Local Storage"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
         <p>
         The following application can help you better track your expenses and help ensure a positive cash flow.
         </p>
@@ -130,7 +137,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.1 - &copy; 2022-05-12</div>
+    <div class="text-center text-muted fs-6">v0.2 - &copy; 2022-05-15</div>
   </footer>
 
   <script>
@@ -149,6 +156,10 @@ const html = `
 
     const formatDate = (dt, timeZone = TIME_ZONE) => {
       return dt ? new Date(dt).toLocaleDateString('en-us', { timeZone: timeZone, weekday: "long", year: "numeric", month: "short", day: "numeric" }) : "";
+    }
+
+    function formatTime(dt, timeZone = TIME_ZONE) {
+      return dt ? new Date(dt).toLocaleTimeString('en-us', { timeZone: timeZone, weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "";
     }
 
     const removeChildren = (parent, header = 0) => {
@@ -216,7 +227,7 @@ const html = `
       el.id = entry.name;
       el.className = "form-control";
       el.type = entry.type ?? "number";
-      if (entry.value !== undefined) {
+      if (entry.value) {
         el.value = entry.value.toFixed(2);
       }
       el.min = entry.min ?? 0;
@@ -229,7 +240,7 @@ const html = `
       if (entry.pattern) {
         el.pattern = entry.pattern;
       }
-      el.setAttribute("onchange", "calculateTotal()");
+      el.setAttribute("onchange", "onChangeHandler()");
       return el;
     };
 
@@ -242,7 +253,7 @@ const html = `
       el.min = 1;
       el.max = 99;
       el.pattern = "^/d+$";
-      el.setAttribute("onchange", "calculateTotal()");
+      el.setAttribute("onchange", "onChangeHandler()");
       return el;
     };
   
@@ -264,7 +275,7 @@ const html = `
       el.appendChild(createOption("week", "Week", entry.freq.period));
       el.appendChild(createOption("month", "Month", entry.freq.period));
       el.appendChild(createOption("year", "Year", entry.freq.period));
-      el.setAttribute("onchange", "calculateTotal()");
+      el.setAttribute("onchange", "onChangeHandler()");
       return el;
     };
 
@@ -431,6 +442,19 @@ const html = `
       });
     };
 
+    const updateExpenseTemplate = () => {
+      Object.keys(_expense_template).forEach((group) => {
+        _expense_template[group].forEach((entry) => {
+          const valueEl = document.getElementById(entry.name);
+          const freqEl = document.getElementById(entry.name+"_freq");
+          const periodEl = document.getElementById(entry.name+"_period");
+          entry.value = valueEl.value ? parseFloat(valueEl.value) : "";
+          entry.freq.every = parseInt(freqEl.value);
+          entry.freq.period = periodEl.value;
+        });
+      });
+    };
+
     const getExpenseTemplate = () => {
       const params = new URLSearchParams();
       if (_guid) {
@@ -471,11 +495,87 @@ const html = `
       });
     };
 
+    var _modified = false;
+    var _state = null;
+    const saveToStorage = () => {
+      if (localStorage && _modified) {
+        updateExpenseTemplate();
+        _state = {};
+        _state.template = _expense_template;
+        _state.lastModified = new Date();
+        localStorage.setItem("npsolve.expense", JSON.stringify(_state));
+        _modified = false;
+        showInfo("Saved latest state to local storage (Updated: "+ formatTime(_state.lastModified) +")");
+      } else if (!localStorage) {
+        showWarning("Local storage not supported!");
+      }
+    };
+
+    const restoreFromStorage = () => {
+      if (localStorage) {
+        _state = localStorage.getItem("npsolve.expense");
+        if (_state) {
+          try {
+            _state = JSON.parse(_state);
+            _expense_template = _state.template;
+            showInfo("Restored state to local storage (Updated: "+ formatTime(_state.lastModified) +")");
+            if (_expense_template) {
+              buildExpenseUI();
+              calculateTotal();
+            }
+            return true;
+          } catch (error) {
+            console.log(error);
+            _expense_template = null;
+          }
+        }
+        _modified = false;
+      } else if (!localStorage) {
+        showWarning("Local storage not supported!");
+      }
+      return false;
+    };
+
+    const clearAllValues = () => {
+      if (_expense_template) {
+        Object.keys(_expense_template).forEach((group) => {
+          _expense_template[group].forEach((entry) => {
+            const valueEl = document.getElementById(entry.name);
+            valueEl.value = "";
+            delete entry.value;
+          });
+        });
+        calculateTotal();
+      }
+    };
+
+    const deleteLocalStorage = () => {
+      if (localStorage) {
+        localStorage.removeItem("npsolve.expense");
+        showInfo("Removed state from local storage. Refreshing...");
+        setTimeout(function() { document.location.reload(true); }, 1000);
+      } else {
+        showWarning("Local storage not supported!");
+      }
+    };
+
+    const configureAutomaticSave = () => {
+      if (localStorage) {
+        setInterval(saveToStorage, 60 * 1000);
+      } else {
+        showWarning("Local storage not supported!");
+      }
+    };
+
     window.onload = function () {
       const url = new URL(window.location.href);
       _guid = url.searchParams.get("guid");
       _profile = url.searchParams.get("profile");
+      if (!restoreFromStorage()) {
+        showInfo("Today is "+ formatDate(new Date()));
+      }
       configureTabs();
+      configureAutomaticSave();
 
       let tab = url.searchParams.get("tab");
       if (!tab && url.pathname.length > 1) {
@@ -487,8 +587,6 @@ const html = `
           tabEl.click();
         }
       }
-
-      showInfo("Today is "+ formatDate(new Date()));
     };
 
     function setTextColour(el, value, className = null) {
@@ -566,6 +664,11 @@ const html = `
         }
       });
       return total;
+    }
+
+    function onChangeHandler() {
+      _modified = true;
+      calculateTotal();
     }
 
     function calculateTotal(subtotals = {}) {
