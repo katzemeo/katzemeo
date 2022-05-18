@@ -119,6 +119,16 @@ const html = `
         </p>
       </div>
       <div class="tab-pane" id="variable-pane" role="tabpanel" aria-labelledby="variable-tab">
+        <div class="d-flex justify-content-between">
+          <div>
+            <p class="fw-bold text-dark">Variable Expenses
+            <button class="btn btn-primary mb-1" type="button" onclick="toggleEditMode()" title="Edit Mode"><i class="fa-solid fa-pen"></i></button>
+            </p>
+          </div>
+          <div>
+            <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('variable')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
         <div id="variable_expenses" class="p-1">
         </div>
       </div>
@@ -153,6 +163,7 @@ const html = `
     var _guid = null;
     var _profile = null;
     var _expense_template = null;
+    var _edit_mode = false;
 
     const formatDate = (dt, timeZone = TIME_ZONE) => {
       return dt ? new Date(dt).toLocaleDateString('en-us', { timeZone: timeZone, weekday: "long", year: "numeric", month: "short", day: "numeric" }) : "";
@@ -184,7 +195,7 @@ const html = `
         let el = document.getElementById(hideId);
         el.style = "display: none";
         el = document.getElementById(showId);
-        el.style = "display: block";  
+        el.style = "display: block";
       }
     };
 
@@ -253,6 +264,7 @@ const html = `
       el.min = 1;
       el.max = 99;
       el.pattern = "^/d+$";
+      //el.setAttribute("size", "2");
       el.setAttribute("onchange", "onChangeHandler()");
       return el;
     };
@@ -277,6 +289,32 @@ const html = `
       el.appendChild(createOption("year", "Year", entry.freq.period));
       el.setAttribute("onchange", "onChangeHandler()");
       return el;
+    };
+
+    const createEditEntry = (entry) => {
+      const el = document.createElement("button");
+      el.name = "edit-hide-show";
+      el.className = "btn btn-primary";
+      el.title = "Edit Mode";
+      el.style = "display: none";
+      el.setAttribute("onclick", "editEntry('variable')");
+      el.innerHTML = '<i class="fa-solid fa-angles-right"/>';
+      return el;
+    };
+
+    const toggleEditMode = () => {
+      _edit_mode = !_edit_mode;
+      const editMode = _edit_mode;
+      let editButtons = document.querySelectorAll('button[name = edit-hide-show]');
+      if (editButtons && editButtons.length > 0) {
+        editButtons.forEach((el) => {
+          if (editMode) {
+            el.style = "display: block";
+          } else {
+            el.style = "display: none";
+          }
+        });
+      }
     };
 
     const getName = (entry) => {
@@ -433,6 +471,9 @@ const html = `
           const divPeriod = createDiv("col-auto", "Period");
           divPeriod.appendChild(createPeriodSelect(entry));
           divRowEntry.appendChild(divPeriod);
+          const divEdit = createDiv("col-auto", "Edit");
+          divEdit.appendChild(createEditEntry(entry));
+          divRowEntry.appendChild(divEdit);
           divCol.appendChild(divRowEntry);
   
           divRow.appendChild(divCol);
@@ -685,7 +726,7 @@ const html = `
       });
 
       const groupEl = document.getElementById("total_expenses");
-      groupEl.style = "display: block"; 
+      groupEl.style = "display: block";
       let totalEl = document.getElementById("total_annual_expense");
       totalEl.value = CUR(total);
       totalEl = document.getElementById("total_monthly_expense");
