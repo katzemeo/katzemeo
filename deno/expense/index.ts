@@ -45,7 +45,7 @@ const html = `
     </script>  
   </head>
   <body oncontextmenu="return false;">
-  <div class="container mt-3">
+  <div class="container mt-sm-3 px-sm-3 px-0">
     <div id="header">
       <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
         <symbol id="check-circle-fill" fill="currentColor" viewBox="0 0 16 16">
