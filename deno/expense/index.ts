@@ -66,7 +66,7 @@ const html = `
       <li class="nav-item" role="presentation" title="Intermittent Expenses"> <button class="nav-link" name="intermittent" id="intermittent-tab" data-bs-toggle="tab" data-bs-target="#intermittent-pane" type="button" role="tab" aria-controls="intermittent-pane" aria-selected="false"><nobr><i class="fas fa-sack-dollar"></i> Intermittent</nobr></button> </li>
       <li class="nav-item" role="presentation" title="Discretionary Expenses"> <button class="nav-link" name="discretionary" id="discretionary-tab" data-bs-toggle="tab" data-bs-target="#discretionary-pane" type="button" role="tab" aria-controls="discretionary-pane" aria-selected="false"><nobr><i class="fas fa-coins"></i> Discretionary</button></nobr></li>
     </ul>
-    <div class="border-grey bg-white p-2 tab-content">
+    <div class="border-grey bg-white p-sm-2 p-1 tab-content">
       <div class="tab-pane active" id="home-pane" role="tabpanel" aria-labelledby="home-tab">
         <div class="d-flex justify-content-between">
           <div>
@@ -122,7 +122,7 @@ const html = `
         <div class="d-flex justify-content-between">
           <div>
             <p class="fw-bold text-dark">Variable Expenses
-            <button class="btn btn-primary mb-1" type="button" onclick="toggleEditMode()" title="Edit Mode"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn mb-1" type="button" onclick="toggleEditMode()" title="Edit Mode"><i class="fa-solid fa-pen"></i></button>
             </p>
           </div>
           <div>
