@@ -112,7 +112,7 @@ const html = `
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('fixed-tab').click()">Fixed</a> tab is used to track all your fixed expenses (e.g. rent, internet).</li>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('intermittent-tab').click()">Intermittent</a> tab is used to track irregular but typically larger expenses (e.g. car repairs, tuition).</li>
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('discretionary-tab').click()">Discretionary</a> tab is used to track non-essential spending (e.g. donations, eating out).</li>
-          </ul>
+        </ul>
         <p class="text-muted"> The tools are implemented as a stateless single-page application (SPA) built primarily with HTML 5, JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
         <a class="text-decoration-none" href="https://deno.com/deploy" target="_blank" rel="noopener noreferrer">Deno Deploy</a>.  Authentication and database persistence is implement with <a class="text-decoration-none" href="https://supabase.com" target="_blank" rel="noopener noreferrer">supabase</a>.
         If interested, you can see the details on <a class="text-decoration-none" href="https://github.com/katzemeo/katzemeo/tree/main/deno/expense" target="_blank" rel="noopener noreferrer">GitHub</a>.
@@ -129,20 +129,46 @@ const html = `
             <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('variable')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
-        <div id="variable_expenses" class="p-1">
-        </div>
+        <div id="variable_expenses" class="p-1"></div>
       </div>
       <div class="tab-pane" id="fixed-pane" role="tabpanel" aria-labelledby="fixed-tab">
-        <div id="fixed_expenses" class="p-1">
+        <div class="d-flex justify-content-between">
+          <div>
+            <p class="fw-bold text-dark">Fixed Expenses
+            <button class="btn mb-1" type="button" onclick="toggleEditMode()" title="Edit Mode"><i class="fa-solid fa-pen"></i></button>
+            </p>
+          </div>
+          <div>
+            <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('fixed')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+          </div>
         </div>
+        <div id="fixed_expenses" class="p-1"></div>
       </div>
       <div class="tab-pane" id="intermittent-pane" role="tabpanel" aria-labelledby="intermittent-tab">
-        <div id="intermittent_expenses" class="p-1">
+        <div class="d-flex justify-content-between">
+          <div>
+            <p class="fw-bold text-dark">Intermittent Expenses
+            <button class="btn mb-1" type="button" onclick="toggleEditMode()" title="Edit Mode"><i class="fa-solid fa-pen"></i></button>
+            </p>
+          </div>
+          <div>
+            <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('intermittent')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+          </div>
         </div>
+        <div id="intermittent_expenses" class="p-1"></div>
       </div>
-      <div class="tab-pane" id="discretionary-pane" role="tabpanel" aria-labelledby="discretionary-tab">   
-        <div id="discretionary_expenses" class="p-1">
+      <div class="tab-pane" id="discretionary-pane" role="tabpanel" aria-labelledby="discretionary-tab">
+        <div class="d-flex justify-content-between">
+          <div>
+            <p class="fw-bold text-dark">Discretionary Expenses
+            <button class="btn mb-1" type="button" onclick="toggleEditMode()" title="Edit Mode"><i class="fa-solid fa-pen"></i></button>
+            </p>
+          </div>
+          <div>
+            <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('discretionary')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+          </div>
         </div>
+        <div id="discretionary_expenses" class="p-1"></div>
       </div>
     </div>
   </div>
@@ -237,6 +263,7 @@ const html = `
       const el = document.createElement("input");
       el.id = entry.name;
       el.className = "form-control";
+      el.placeholder = "$";
       el.type = entry.type ?? "number";
       if (entry.value) {
         el.value = entry.value.toFixed(2);
@@ -457,7 +484,7 @@ const html = `
           const divRow = createDiv("row align-items-center gx-1");
           const divCol = createDiv("col");
           const label = document.createElement("label");
-          label.innerText = entry.caption +" $";
+          label.innerText = entry.caption;
           label.appendChild(document.createElement("br"));
           divCol.appendChild(label);
   
