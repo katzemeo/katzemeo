@@ -78,8 +78,8 @@ const html = `
             </p>
           </div>
           <div>
-            <button class="btn btn-primary mb-1" type="button" onclick="clearAllValues()" title="Clear All Values"><i class="fa-solid fa-rotate"></i></button>
-            <button class="btn btn-primary mb-1" type="button" onclick="deleteLocalStorage()" title="Delete Local Storage"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn btn-primary me-1" type="button" onclick="clearAllValues()" title="Clear All Values"><i class="fa-solid fa-rotate"></i></button>
+            <button class="btn btn-primary me-1" type="button" onclick="deleteLocalStorage()" title="Delete Local Storage"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
         <p>
@@ -126,7 +126,7 @@ const html = `
             </p>
           </div>
           <div>
-            <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('variable')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntry('variable')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
         <div id="variable_expenses" class="p-1"></div>
@@ -139,7 +139,7 @@ const html = `
             </p>
           </div>
           <div>
-            <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('fixed')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntry('fixed')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
         <div id="fixed_expenses" class="p-1"></div>
@@ -152,7 +152,7 @@ const html = `
             </p>
           </div>
           <div>
-            <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('intermittent')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntry('intermittent')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
         <div id="intermittent_expenses" class="p-1"></div>
@@ -165,7 +165,7 @@ const html = `
             </p>
           </div>
           <div>
-            <button name="edit-hide-show" class="btn btn-primary" type="button" onclick="addEntry('discretionary')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntry('discretionary')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
         <div id="discretionary_expenses" class="p-1"></div>
@@ -173,8 +173,99 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.2 - &copy; 2022-05-15</div>
+    <div class="text-center text-muted fs-6">v0.3 - &copy; 2022-05-21</div>
   </footer>
+
+  <!-- Modal: Add Entry -->
+  <div class="modal fade" id="addDialog" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="loginLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"">Add Expense Entry</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel"></button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <div class="text-danger" id="addEntryMessage"></div>
+          </div>
+          <br/>
+          <div class="input-group m-1">
+            <div class="col text-start">
+              <label>Expense Type</label>
+              <select class="form-select" id="add_expense_type">
+                <option value="variable">Variable</option>
+                <option value="fixed">Fixed</option>
+                <option value="intermittent">Intermittent</option>
+                <option value="discretionary">Discretionary</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group m-1">
+            <div class="col text-start">
+              <label>Expense Name</label>
+              <input class="form-control" type="text" id="add_expense_name" maxlength="100"/>
+            </div>
+          </div>
+          <div class="input-group m-1">
+            <div class="col text-start">
+              <label>Expense Caption</label>
+              <input class="form-control" type="text" id="add_expense_caption" maxlength="100"/>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="addEntry()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Entry -->
+  <div class="modal fade" id="editDialog" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="loginLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Expense Entry</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel"></button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group m-1">
+            <div class="text-danger" id="editEntryMessage"></div>
+          </div>
+          <br/>
+          <div class="input-group m-1">
+            <div class="col text-start">
+              <label>Expense Type</label>
+              <select class="form-select" id="expense_type">
+                <option value="variable">Variable</option>
+                <option value="fixed">Fixed</option>
+                <option value="intermittent">Intermittent</option>
+                <option value="discretionary">Discretionary</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group m-1">
+            <div class="col text-start">
+              <label>Expense Name</label>
+              <input class="form-control" type="text" id="expense_name" maxlength="100"/>
+            </div>
+          </div>
+          <div class="input-group m-1">
+            <div class="col text-start">
+              <label>Expense Caption</label>
+              <input class="form-control" type="text" id="expense_caption" maxlength="100"/>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" onclick="deleteEntry()">Delete</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="saveEntry()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const JSON_HEADERS = {
@@ -318,13 +409,13 @@ const html = `
       return el;
     };
 
-    const createEditEntry = (entry) => {
+    const createEditEntry = (groupName, entry) => {
       const el = document.createElement("button");
       el.name = "edit-hide-show";
       el.className = "btn btn-primary";
       el.title = "Edit Mode";
       el.style = "display: none";
-      el.setAttribute("onclick", "editEntry('variable')");
+      el.setAttribute("onclick", "editEntry('"+ groupName +"', '"+ entry.name +"')");
       el.innerHTML = '<i class="fa-solid fa-angles-right"/>';
       return el;
     };
@@ -342,6 +433,39 @@ const html = `
           }
         });
       }
+    };
+
+    const addEntry = (groupName) => {
+      const options = { backdrop: "static" };
+      const modal = new bootstrap.Modal(document.getElementById('addDialog'), options);
+      modal.show();
+
+      let el = document.getElementById("add_expense_type");
+      el.value = groupName;
+    };
+
+    const editEntry = (groupName, entryName) => {
+      const options = { backdrop: "static" };
+      const modal = new bootstrap.Modal(document.getElementById('editDialog'), options);
+      modal.show();
+
+      let entry = findEntry(groupName, entryName);
+      let el = document.getElementById("expense_type");
+      el.value = groupName;
+      el = document.getElementById("expense_name");
+      el.value = entryName;
+      el = document.getElementById("expense_caption");
+      el.value = entry.caption;
+    };
+
+    const findEntry = (groupName, entryName) => {
+      const entries = _expense_template[groupName];
+      for (let i=0; i<entries.length; i++) {
+        if (entries[i].name === entryName) {
+          return entries[i];
+        }
+      }
+      throw new Error('Unexpected error - unknown entry "'+ entryName +'"');
     };
 
     const getName = (entry) => {
@@ -499,7 +623,7 @@ const html = `
           divPeriod.appendChild(createPeriodSelect(entry));
           divRowEntry.appendChild(divPeriod);
           const divEdit = createDiv("col-auto", "Edit");
-          divEdit.appendChild(createEditEntry(entry));
+          divEdit.appendChild(createEditEntry(group, entry));
           divRowEntry.appendChild(divEdit);
           divCol.appendChild(divRowEntry);
   
@@ -573,7 +697,7 @@ const html = `
         _state.lastModified = new Date();
         localStorage.setItem("npsolve.expense", JSON.stringify(_state));
         _modified = false;
-        showInfo("Saved latest state to local storage (Updated: "+ formatTime(_state.lastModified) +")");
+        showInfo("Saved to local storage (Updated: "+ formatTime(_state.lastModified) +")");
       } else if (!localStorage) {
         showWarning("Local storage not supported!");
       }
@@ -586,7 +710,7 @@ const html = `
           try {
             _state = JSON.parse(_state);
             _expense_template = _state.template;
-            showInfo("Restored state to local storage (Updated: "+ formatTime(_state.lastModified) +")");
+            showInfo("Restored from local storage (Updated: "+ formatTime(_state.lastModified) +")");
             if (_expense_template) {
               buildExpenseUI();
               calculateTotal();
@@ -618,6 +742,11 @@ const html = `
     };
 
     const deleteLocalStorage = () => {
+      var r = confirm("Are you sure you want to delete all?");
+      if (r != true) {
+        return;
+      }
+
       if (localStorage) {
         localStorage.removeItem("npsolve.expense");
         showInfo("Removed state from local storage. Refreshing...");
