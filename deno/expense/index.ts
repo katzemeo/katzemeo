@@ -11,7 +11,7 @@ const html = `
     <!-- Bootstrap CSS & Font Awesome Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
       integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-    <link href="https://use.fontawesome.com/releases/v6.1.0/css/all.css" rel="stylesheet">
+    <link href="https://use.fontawesome.com/releases/v6.1.1/css/all.css" rel="stylesheet">
     <style>
       body {
         padding: 0;
@@ -114,7 +114,7 @@ const html = `
           <li>The <a class="text-decoration-none" href="javascript:document.getElementById('discretionary-tab').click()">Discretionary</a> tab is used to track non-essential spending (e.g. donations, eating out).</li>
         </ul>
         <p class="text-muted"> The tools are implemented as a stateless single-page application (SPA) built primarily with HTML 5, JavaScript and Bootstrap 5 on the UI side and hosted at the edge on
-        <a class="text-decoration-none" href="https://deno.com/deploy" target="_blank" rel="noopener noreferrer">Deno Deploy</a>.  Authentication and database persistence is implement with <a class="text-decoration-none" href="https://supabase.com" target="_blank" rel="noopener noreferrer">supabase</a>.
+        <a class="text-decoration-none" href="https://deno.com/deploy" target="_blank" rel="noopener noreferrer">Deno Deploy</a>.  Once loaded, all processing is done locally within the web browser.
         If interested, you can see the details on <a class="text-decoration-none" href="https://github.com/katzemeo/katzemeo/tree/main/deno/expense" target="_blank" rel="noopener noreferrer">GitHub</a>.
         </p>
       </div>
@@ -126,7 +126,7 @@ const html = `
             </p>
           </div>
           <div>
-            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntry('variable')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('variable')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
         <div id="variable_expenses" class="p-1"></div>
@@ -139,7 +139,7 @@ const html = `
             </p>
           </div>
           <div>
-            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntry('fixed')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('fixed')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
         <div id="fixed_expenses" class="p-1"></div>
@@ -152,7 +152,7 @@ const html = `
             </p>
           </div>
           <div>
-            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntry('intermittent')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('intermittent')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
         <div id="intermittent_expenses" class="p-1"></div>
@@ -165,7 +165,7 @@ const html = `
             </p>
           </div>
           <div>
-            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntry('discretionary')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('discretionary')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
         <div id="discretionary_expenses" class="p-1"></div>
@@ -173,7 +173,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.3 - &copy; 2022-05-21</div>
+    <div class="text-center text-muted fs-6">v0.4 - &copy; 2022-06-03</div>
   </footer>
 
   <!-- Modal: Add Entry -->
@@ -189,7 +189,7 @@ const html = `
             <div class="text-danger" id="addEntryMessage"></div>
           </div>
           <br/>
-          <div class="input-group m-1">
+          <div class="input-group mb-2">
             <div class="col text-start">
               <label>Expense Type</label>
               <select class="form-select" id="add_expense_type">
@@ -200,13 +200,13 @@ const html = `
               </select>
             </div>
           </div>
-          <div class="input-group m-1">
+          <div class="input-group mb-2">
             <div class="col text-start">
               <label>Expense Name</label>
               <input class="form-control" type="text" id="add_expense_name" maxlength="100"/>
             </div>
           </div>
-          <div class="input-group m-1">
+          <div class="input-group mb-2">
             <div class="col text-start">
               <label>Expense Caption</label>
               <input class="form-control" type="text" id="add_expense_caption" maxlength="100"/>
@@ -215,7 +215,7 @@ const html = `
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" onclick="addEntry()">Save</button>
+          <button type="button" class="btn btn-primary" onclick="addExpenseEntry()">Save</button>
         </div>
       </div>
     </div>
@@ -230,11 +230,11 @@ const html = `
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel"></button>
         </div>
         <div class="modal-body">
-          <div class="input-group m-1">
+          <div class="input-group">
             <div class="text-danger" id="editEntryMessage"></div>
           </div>
           <br/>
-          <div class="input-group m-1">
+          <div class="input-group mb-2">
             <div class="col text-start">
               <label>Expense Type</label>
               <select class="form-select" id="expense_type">
@@ -245,13 +245,13 @@ const html = `
               </select>
             </div>
           </div>
-          <div class="input-group m-1">
+          <div class="input-group mb-2">
             <div class="col text-start">
               <label>Expense Name</label>
               <input class="form-control" type="text" id="expense_name" maxlength="100"/>
             </div>
           </div>
-          <div class="input-group m-1">
+          <div class="input-group mb-2">
             <div class="col text-start">
               <label>Expense Caption</label>
               <input class="form-control" type="text" id="expense_caption" maxlength="100"/>
@@ -259,9 +259,11 @@ const html = `
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-danger" onclick="deleteEntry()">Delete</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary" onclick="saveEntry()">Save</button>
+          <button type="button" class="btn btn-danger" onclick="deleteExpenseEntry()">Delete</button>
+          <button type="button" class="btn btn-primary" onclick="moveEntryUp()" title="Move Up"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="btn btn-primary" onclick="moveEntryDown()" title="Move Down"><i class="fa-solid fa-arrow-down"></i></button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>          
+          <button type="button" class="btn btn-primary" onclick="saveExpenseEntry()">Save</button>
         </div>
       </div>
     </div>
@@ -281,6 +283,8 @@ const html = `
     var _profile = null;
     var _expense_template = null;
     var _edit_mode = false;
+    var _group_name = null;
+    var _entry_name = null;
 
     const formatDate = (dt, timeZone = TIME_ZONE) => {
       return dt ? new Date(dt).toLocaleDateString('en-us', { timeZone: timeZone, weekday: "long", year: "numeric", month: "short", day: "numeric" }) : "";
@@ -414,8 +418,8 @@ const html = `
       el.name = "edit-hide-show";
       el.className = "btn btn-primary";
       el.title = "Edit Mode";
-      el.style = "display: none";
-      el.setAttribute("onclick", "editEntry('"+ groupName +"', '"+ entry.name +"')");
+      el.style = _edit_mode ? "display: block" : "display: none";
+      el.setAttribute("onclick", "editEntryDialog('"+ groupName +"', '"+ entry.name +"')");
       el.innerHTML = '<i class="fa-solid fa-angles-right"/>';
       return el;
     };
@@ -435,27 +439,150 @@ const html = `
       }
     };
 
-    const addEntry = (groupName) => {
+    const addEntryDialog = (groupName) => {
       const options = { backdrop: "static" };
       const modal = new bootstrap.Modal(document.getElementById('addDialog'), options);
+      writeAddError("");
       modal.show();
 
       let el = document.getElementById("add_expense_type");
       el.value = groupName;
     };
 
-    const editEntry = (groupName, entryName) => {
-      const options = { backdrop: "static" };
-      const modal = new bootstrap.Modal(document.getElementById('editDialog'), options);
-      modal.show();
+    const writeAddError = (msg) => {
+      const el = document.getElementById("addEntryMessage");
+      el.innerText = msg;
+    };
 
+    const editEntryDialog = (groupName, entryName) => {
       let entry = findEntry(groupName, entryName);
+      if (entry) {
+        const options = { backdrop: "static" };
+        const modal = new bootstrap.Modal(document.getElementById('editDialog'), options);
+        writeEditMessage("");
+        modal.show();
+  
+        _group_name = groupName;
+        _entry_name = entryName;
+        let el = document.getElementById("expense_type");
+        el.value = groupName;
+        el = document.getElementById("expense_name");
+        el.value = entryName;
+        el = document.getElementById("expense_caption");
+        el.value = entry.caption;  
+      } else {
+        writeEditMessage('Unknown entry "'+ entryName +'"');
+      }
+    };
+
+    const writeEditMessage = (msg) => {
+      const el = document.getElementById("editEntryMessage");
+      el.innerText = msg;
+    };
+
+    const addExpenseEntry = () => {
+      let el = document.getElementById("add_expense_type");
+      const groupName = el.value;
+      el = document.getElementById("add_expense_name");
+      const entryName = el.value;
+      el = document.getElementById("add_expense_caption");
+      const entryCaption = el.value;
+      const entry = { name: entryName, caption: entryCaption, freq: {every: 1, period: 'week'}};
+      try {
+        addEntry(groupName, entry);
+        const modalEl = document.getElementById('addDialog')
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        buildGroupExpenseUI(groupName);
+        calculateTotal();
+      } catch (err) {
+        writeAddError(err.message);
+      }
+    };
+
+    const deleteExpenseEntry = () => {
       let el = document.getElementById("expense_type");
-      el.value = groupName;
+      const groupName = el.value;
       el = document.getElementById("expense_name");
-      el.value = entryName;
+      const entryName = el.value;
+      if (deleteEntry(groupName, entryName)) {
+        const modalEl = document.getElementById('editDialog')
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        buildGroupExpenseUI(groupName);
+        calculateTotal();
+      }
+    };
+
+    const saveExpenseEntry = () => {
+      let el = document.getElementById("expense_type");
+      const groupName = el.value;
+      el = document.getElementById("expense_name");
+      const entryName = el.value;
       el = document.getElementById("expense_caption");
-      el.value = entry.caption;
+      const entryCaption = el.value;
+
+      try {
+        checkEntryAttr(groupName, entryName, "name");
+        checkEntryAttr(groupName, entryCaption, "caption");
+        let entry = findEntry(_group_name, _entry_name);
+        if (groupName !== _group_name || entryName !== _entry_name) {
+          const checkEntry = findEntry(groupName, entryName);
+          if (checkEntry) {
+            throw new Error('Duplicate entry "'+ entryName +'" in group "'+ groupName +'"');
+          }
+
+          entry.name = entryName;
+          if (groupName !== _group_name) {
+            deleteEntry(_group_name, entryName);
+            addEntry(groupName, entry);
+            buildGroupExpenseUI(_group_name);
+          }
+        }
+
+        entry.caption = entryCaption;
+        const modalEl = document.getElementById('editDialog')
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        buildGroupExpenseUI(groupName);
+        calculateTotal();
+      } catch (err) {
+        writeEditMessage(err.message);
+      }
+    };
+
+    const moveEntryUp = () => {
+      const entries = _expense_template[_group_name];
+      for (let i=0; i<entries.length; i++) {
+        if (entries[i].name === _entry_name) {
+          if (i > 0) {
+            const entry = entries[i];
+            entries.splice(i, 1);
+            entries.splice(i-1, 0, entry);
+            _modified = true;
+            buildGroupExpenseUI(_group_name);
+            writeEditMessage('Moved entry to position '+ i +'');
+            calculateTotal();
+            break;
+          }
+        }
+      }
+    };
+
+    const moveEntryDown = () => {
+      const entries = _expense_template[_group_name];
+      for (let i=0; i<entries.length-1; i++) {
+        if (entries[i].name === _entry_name) {
+          const entry = entries[i];
+          entries.splice(i, 1);
+          entries.splice(i+1, 0, entry);
+          _modified = true;
+          buildGroupExpenseUI(_group_name);
+          writeEditMessage('Moved entry to position '+ (i+2) +'');
+          calculateTotal();
+          break;
+        }
+      }
     };
 
     const findEntry = (groupName, entryName) => {
@@ -465,7 +592,37 @@ const html = `
           return entries[i];
         }
       }
-      throw new Error('Unexpected error - unknown entry "'+ entryName +'"');
+      return null;
+    };
+
+    const deleteEntry = (groupName, entryName) => {
+      const entries = _expense_template[groupName];
+      for (let i=0; i<entries.length; i++) {
+        if (entries[i].name === entryName) {
+          entries.splice(i, 1);
+          _modified = true;
+          return true;
+        }
+      }
+      return false;
+    };
+
+    const checkEntryAttr = (groupName, value, attrName) => {
+      if (!value || value.trim() === "") {
+        throw new Error('Please specify a valid entry '+ attrName);
+      }
+    };
+
+    const addEntry = (groupName, entry) => {
+      checkEntryAttr(groupName, entry.name, "name");
+      checkEntryAttr(groupName, entry.caption, "caption");
+      if (findEntry(groupName, entry.name)) {
+        throw new Error('Duplicate entry "'+ entry.name +'" in group "'+ groupName +'"');
+      }
+      const entries = _expense_template[groupName];
+      entries.push(entry);
+      _modified = true;
+      return true;
     };
 
     const getName = (entry) => {
@@ -600,37 +757,42 @@ const html = `
     const buildExpenseUI = () => {
       let groups = ["variable", "fixed", "intermittent", "discretionary"];
       groups.forEach((group) => {
-        const groupEl = document.getElementById(group +"_expenses");
-        groupEl.appendChild(createLabelReadonlyInputs("Annual Total", group +"_annual_total", "Monthly Total", group +"_monthly_total"));
-        groupEl.appendChild(document.createElement("br"));
-        _expense_template[group].forEach((entry) => {
-          const p = document.createElement("p");
-          const divRow = createDiv("row align-items-center gx-1");
-          const divCol = createDiv("col");
-          const label = document.createElement("label");
-          label.innerText = entry.caption;
-          label.appendChild(document.createElement("br"));
-          divCol.appendChild(label);
-  
-          const divRowEntry = createDiv("row align-items-center gx-1");
-          const divValue = createDiv("col-5");
-          divValue.appendChild(createValueControl(entry));
-          divRowEntry.appendChild(divValue);
-          const divFreq = createDiv("col-auto", "Frequency");
-          divFreq.appendChild(createFreqControl(entry));
-          divRowEntry.appendChild(divFreq);
-          const divPeriod = createDiv("col-auto", "Period");
-          divPeriod.appendChild(createPeriodSelect(entry));
-          divRowEntry.appendChild(divPeriod);
-          const divEdit = createDiv("col-auto", "Edit");
-          divEdit.appendChild(createEditEntry(group, entry));
-          divRowEntry.appendChild(divEdit);
-          divCol.appendChild(divRowEntry);
-  
-          divRow.appendChild(divCol);
-          p.appendChild(divRow);
-          groupEl.appendChild(p);
-        });
+        buildGroupExpenseUI(group);
+      });
+    };
+
+    const buildGroupExpenseUI = (group) => {
+      const groupEl = document.getElementById(group +"_expenses");
+      removeChildren(groupEl);
+      groupEl.appendChild(createLabelReadonlyInputs("Annual Total", group +"_annual_total", "Monthly Total", group +"_monthly_total"));
+      groupEl.appendChild(document.createElement("br"));
+      _expense_template[group].forEach((entry) => {
+        const p = document.createElement("p");
+        const divRow = createDiv("row align-items-center gx-1");
+        const divCol = createDiv("col");
+        const label = document.createElement("label");
+        label.innerText = entry.caption;
+        label.appendChild(document.createElement("br"));
+        divCol.appendChild(label);
+
+        const divRowEntry = createDiv("row align-items-center gx-1");
+        const divValue = createDiv("col-5");
+        divValue.appendChild(createValueControl(entry));
+        divRowEntry.appendChild(divValue);
+        const divFreq = createDiv("col-auto", "Frequency");
+        divFreq.appendChild(createFreqControl(entry));
+        divRowEntry.appendChild(divFreq);
+        const divPeriod = createDiv("col-auto", "Period");
+        divPeriod.appendChild(createPeriodSelect(entry));
+        divRowEntry.appendChild(divPeriod);
+        const divEdit = createDiv("col-auto", "Edit");
+        divEdit.appendChild(createEditEntry(group, entry));
+        divRowEntry.appendChild(divEdit);
+        divCol.appendChild(divRowEntry);
+
+        divRow.appendChild(divCol);
+        p.appendChild(divRow);
+        groupEl.appendChild(p);
       });
     };
 
@@ -759,6 +921,7 @@ const html = `
     const configureAutomaticSave = () => {
       if (localStorage) {
         setInterval(saveToStorage, 60 * 1000);
+        window.onbeforeunload = saveToStorage;
       } else {
         showWarning("Local storage not supported!");
       }
