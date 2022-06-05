@@ -424,7 +424,7 @@ const html = `
       return el;
     };
 
-    const createFreqControl = (entry) => {
+    const createFreqControl = (groupName, entry) => {
       const el = document.createElement("input");
       el.id = entry.name +"_freq";
       el.className = "form-control";
@@ -434,7 +434,7 @@ const html = `
       el.max = 99;
       el.pattern = "^/d+$";
       //el.setAttribute("size", "2");
-      el.setAttribute("onchange", "onChangeHandler()");
+      el.setAttribute("onchange", "onChangeHandler('"+ groupName +"')");
       return el;
     };
   
@@ -448,7 +448,7 @@ const html = `
       return el;
     };
 
-    const createPeriodSelect = (entry) => {
+    const createPeriodSelect = (groupName, entry) => {
       const el = document.createElement("select");
       el.id = entry.name +"_period";
       el.className = "form-select";
@@ -456,13 +456,29 @@ const html = `
       el.appendChild(createOption("week", "Week", entry.freq.period));
       el.appendChild(createOption("month", "Month", entry.freq.period));
       el.appendChild(createOption("year", "Year", entry.freq.period));
-      el.setAttribute("onchange", "onChangeHandler()");
+      el.setAttribute("onchange", "onChangeHandler('"+ groupName +"')");
       return el;
     };
 
     const calcNexDue = (entry) => {
       let nextDue = new Date(entry.fromDate);
-      // TODO
+      if (nextDue.getTime() < NOW.getTime()) {
+        const delta = NOW.getTime() - nextDue.getTime();
+        let periods;
+        if (entry.freq.period === "day") {
+          periods = delta / (1000 * 60 * 60 * 24 * entry.freq.every);
+          nextDue = new Date(nextDue.getFullYear(), nextDue.getMonth(), nextDue.getDate() + (periods + 1) * entry.freq.every);
+        } else if (entry.freq.period === "week") {
+          periods = delta / (1000 * 60 * 60 * 24 * 7 * entry.freq.every);
+          nextDue = new Date(nextDue.getFullYear(), nextDue.getMonth(), nextDue.getDate() + (periods + 1) * entry.freq.every * 7);
+        } else if (entry.freq.period === "month") {
+          periods = delta / (1000 * 60 * 60 * 24 * 365 / 12 * entry.freq.every);
+          nextDue = new Date(nextDue.getFullYear(), nextDue.getMonth() + (periods + 1) * entry.freq.every, nextDue.getDate());
+        } else if (entry.freq.period === "year") {
+          periods = delta / (1000 * 60 * 60 * 24 * 365 * entry.freq.every);
+          nextDue = new Date(nextDue.getFullYear() + (periods + 1) * entry.freq.every, nextDue.getMonth(), nextDue.getDate());
+        }
+      }
       return nextDue;
     };
 
@@ -471,7 +487,7 @@ const html = `
       const nextDue = formatDate(calcNexDue(entry));
       const htmlContent = '<ul><li><b>From:</b> '+ formatDate(entry.fromDate) +'</li><li><b>To:</b> '+ formatDate(entry.toDate) +'</li></ul>';
       el.setAttribute("name", "view-hide-show");
-      el.style = "padding-top:4px" + (_edit_mode ? "; display: none" : "display: block");
+      el.style = "padding-top:4px; padding-left:10px; " + (_edit_mode ? "display: none" : "display: block");
       el.innerHTML = '<a tabindex="0" title="Next: '+ nextDue +'" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="'+ escapeHtml(htmlContent) +'"><i class="fa-solid fa-calendar pointer"/></a>';
       return el;
     };
@@ -505,15 +521,16 @@ const html = `
       if (viewButtons && viewButtons.length > 0) {
         viewButtons.forEach((el) => {
           if (editMode) {
-            el.style = "display: none";
+            el.style = "padding-top:4px; padding-left:10px; display: none";
           } else {
-            el.style = "display: block";
+            el.style = "padding-top:4px; padding-left:10px; display: block";
           }
         });
       }
     };
 
     const addEntryDialog = (groupName) => {
+      updateExpenseTemplate();
       const options = { backdrop: "static" };
       const modal = new bootstrap.Modal(document.getElementById('addDialog'), options);
       writeAddError("");
@@ -524,6 +541,9 @@ const html = `
 
       el = document.getElementById("add_from_date");
       el.valueAsDate = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+
+      el = document.getElementById("add_to_date");
+      el.valueAsDate = null;
     };
 
     const writeAddError = (msg) => {
@@ -532,6 +552,7 @@ const html = `
     };
 
     const editEntryDialog = (groupName, entryName) => {
+      updateExpenseTemplate();
       let entry = findEntry(groupName, entryName);
       if (entry) {
         const options = { backdrop: "static" };
@@ -574,9 +595,9 @@ const html = `
       try {
         checkFromToDates("add_from_date", "add_to_date");
         el = document.getElementById("add_from_date");
-        entry.fromDate = el.value ? el.valueAsDate.toISOString() : null;
+        entry.fromDate = el.value ? el.valueAsDate : null;
         el = document.getElementById("add_to_date");
-        entry.toDate = el.value ? el.valueAsDate.toISOString() : null;
+        entry.toDate = el.value ? el.valueAsDate : null;
   
         addEntry(groupName, entry);
         const modalEl = document.getElementById('addDialog')
@@ -850,7 +871,7 @@ const html = `
       divAlert.appendChild(button);
       parentEl.appendChild(divAlert);
 
-      setTimeout(function() { removeElementsByClass("alert "+ type); }, 3000);
+      setTimeout(function() { removeElementsByClass("alert "+ type); }, 5000);
     };
 
     const showInfo = (message) => {
@@ -895,10 +916,10 @@ const html = `
         divValue.appendChild(createValueControl(entry));
         divRowEntry.appendChild(divValue);
         const divFreq = createDiv("col-auto", "Frequency");
-        divFreq.appendChild(createFreqControl(entry));
+        divFreq.appendChild(createFreqControl(group, entry));
         divRowEntry.appendChild(divFreq);
         const divPeriod = createDiv("col-auto", "Period");
-        divPeriod.appendChild(createPeriodSelect(entry));
+        divPeriod.appendChild(createPeriodSelect(group, entry));
         divRowEntry.appendChild(divPeriod);
         const divEdit = createDiv("col-auto", "Edit");
         divEdit.appendChild(createEditEntry(group, entry));
@@ -920,17 +941,30 @@ const html = `
       });
     };
 
-    const updateExpenseTemplate = () => {
-      Object.keys(_expense_template).forEach((group) => {
-        _expense_template[group].forEach((entry) => {
+    const updateExpenseTemplate = (groupName = null) => {
+      if (groupName) {
+        _expense_template[groupName].forEach((entry) => {
           const valueEl = document.getElementById(entry.name);
           const freqEl = document.getElementById(entry.name+"_freq");
           const periodEl = document.getElementById(entry.name+"_period");
           entry.value = valueEl.value ? parseFloat(valueEl.value) : "";
           entry.freq.every = parseInt(freqEl.value);
+          freqEl.value = entry.freq.every;
           entry.freq.period = periodEl.value;
         });
-      });
+      } else {
+        Object.keys(_expense_template).forEach((group) => {
+          _expense_template[group].forEach((entry) => {
+            const valueEl = document.getElementById(entry.name);
+            const freqEl = document.getElementById(entry.name+"_freq");
+            const periodEl = document.getElementById(entry.name+"_period");
+            entry.value = valueEl.value ? parseFloat(valueEl.value) : "";
+            entry.freq.every = parseInt(freqEl.value);
+            freqEl.value = entry.freq.every;
+            entry.freq.period = periodEl.value;
+          });
+        });  
+      }
     };
 
     const getExpenseTemplate = () => {
@@ -1150,9 +1184,18 @@ const html = `
       return total;
     }
 
-    function onChangeHandler() {
+    var _onChangeTimeoutId = null;
+    function onChangeHandler(groupName = null) {
       _modified = true;
-      calculateTotal();
+      if (groupName) {
+        updateExpenseTemplate(groupName);
+        if (_onChangeTimeoutId) {
+          clearTimeout(_onChangeTimeoutId);
+        }
+        _onChangeTimeoutId = setTimeout(function() { buildGroupExpenseUI(groupName); calculateTotal(); }, 500);
+      } else {
+        calculateTotal();
+      }
     }
 
     function calculateTotal(subtotals = {}) {
