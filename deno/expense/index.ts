@@ -13,6 +13,14 @@ const html = `
       integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
     <link href="https://use.fontawesome.com/releases/v6.1.1/css/all.css" rel="stylesheet">
     <style>
+      i.pointer {
+        cursor: pointer;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
       body {
         padding: 0;
         margin: 0;
@@ -212,6 +220,18 @@ const html = `
               <input class="form-control" type="text" id="add_expense_caption" maxlength="100"/>
             </div>
           </div>
+          <div id="add_entry_dates" class="input-group mb-2">
+            <div class="row align-items-center">
+              <div class="col">
+                <label>From Date</label><br>
+                <input class="form-control" type="date" id="add_from_date"/>              
+              </div>
+              <div class="col">
+                <label>To Date</label><br>
+                <input class="form-control" type="date" id="add_to_date"/>              
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -257,6 +277,18 @@ const html = `
               <input class="form-control" type="text" id="expense_caption" maxlength="100"/>
             </div>
           </div>
+          <div id="entry_dates" class="input-group mb-2">
+            <div class="row align-items-center">
+              <div class="col">
+                <label>From Date</label><br>
+                <input class="form-control" type="date" id="from_date"/>              
+              </div>
+              <div class="col">
+                <label>To Date</label><br>
+                <input class="form-control" type="date" id="to_date"/>              
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-danger" onclick="deleteExpenseEntry()">Delete</button>
@@ -287,18 +319,37 @@ const html = `
     var _entry_name = null;
 
     const formatDate = (dt, timeZone = TIME_ZONE) => {
-      return dt ? new Date(dt).toLocaleDateString('en-us', { timeZone: timeZone, weekday: "long", year: "numeric", month: "short", day: "numeric" }) : "";
-    }
+      return dt ? new Date(dt).toLocaleDateString('en-us', { timeZone: timeZone, weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "";
+    };
 
     function formatTime(dt, timeZone = TIME_ZONE) {
       return dt ? new Date(dt).toLocaleTimeString('en-us', { timeZone: timeZone, weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "";
-    }
+    };
 
     const removeChildren = (parent, header = 0) => {
       while (parent.lastChild && parent.childElementCount > header) {
         parent.removeChild(parent.lastChild);
       }
     };
+
+    const removeElementsByClass = (className) => {
+      const elements = document.getElementsByClassName(className);
+      while(elements.length > 0){
+        elements[0].parentNode.removeChild(elements[0]);
+      }
+    };
+
+    const escapeHtml = (text) => {
+      var map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+    
+      return text.replace(/[&<>"']/g, function (m) { return map[m]; });
+    }
 
     const getFloatParam = (url, name, defaultValue) => {
       let value = url.searchParams.get(name);
@@ -413,6 +464,22 @@ const html = `
       return el;
     };
 
+    const calcNexDue = (entry) => {
+      let nextDue = new Date(entry.fromDate);
+      // TODO
+      return nextDue;
+    };
+
+    const createEntryLink = (entry) => {
+      const el = createDiv("col");
+      const nextDue = formatDate(calcNexDue(entry));
+      const htmlContent = '<ul><li><b>From:</b> '+ formatDate(entry.fromDate) +'</li><li><b>To:</b> '+ formatDate(entry.toDate) +'</li></ul>';
+      el.setAttribute("name", "view-hide-show");
+      el.style = "padding-top:4px" + (_edit_mode ? "; display: none" : "display: block");
+      el.innerHTML = '<a tabindex="0" title="Next: '+ nextDue +'" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="'+ escapeHtml(htmlContent) +'"><i class="fa-solid fa-calendar pointer"/></a>';
+      return el;
+    };
+
     const createEditEntry = (groupName, entry) => {
       const el = document.createElement("button");
       el.name = "edit-hide-show";
@@ -437,6 +504,17 @@ const html = `
           }
         });
       }
+
+      let viewButtons = document.querySelectorAll('div[name = view-hide-show]');
+      if (viewButtons && viewButtons.length > 0) {
+        viewButtons.forEach((el) => {
+          if (editMode) {
+            el.style = "display: none";
+          } else {
+            el.style = "display: block";
+          }
+        });
+      }
     };
 
     const addEntryDialog = (groupName) => {
@@ -447,6 +525,9 @@ const html = `
 
       let el = document.getElementById("add_expense_type");
       el.value = groupName;
+
+      el = document.getElementById("add_from_date");
+      el.valueAsDate = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
     };
 
     const writeAddError = (msg) => {
@@ -469,7 +550,12 @@ const html = `
         el = document.getElementById("expense_name");
         el.value = entryName;
         el = document.getElementById("expense_caption");
-        el.value = entry.caption;  
+        el.value = entry.caption;
+
+        el = document.getElementById("from_date");
+        el.valueAsDate = entry.fromDate ? new Date(entry.fromDate) : null;
+        el = document.getElementById("to_date");
+        el.valueAsDate = entry.toDate ? new Date(entry.toDate) : null;
       } else {
         writeEditMessage('Unknown entry "'+ entryName +'"');
       }
@@ -488,6 +574,12 @@ const html = `
       el = document.getElementById("add_expense_caption");
       const entryCaption = el.value;
       const entry = { name: entryName, caption: entryCaption, freq: {every: 1, period: 'week'}};
+
+      el = document.getElementById("add_from_date");
+      entry.fromDate = el.value ? el.valueAsDate.toISOString() : null;
+      el = document.getElementById("add_to_date");
+      entry.toDate = el.value ? el.valueAsDate.toISOString() : null;
+
       try {
         addEntry(groupName, entry);
         const modalEl = document.getElementById('addDialog')
@@ -541,6 +633,13 @@ const html = `
         }
 
         entry.caption = entryCaption;
+
+        el = document.getElementById("from_date");
+        entry.fromDate = el.value ? el.valueAsDate : null;
+        el = document.getElementById("to_date");
+        entry.toDate = el.value ? el.valueAsDate : null;
+        _modified = true;
+
         const modalEl = document.getElementById('editDialog')
         const modal = bootstrap.Modal.getInstance(modalEl);
         modal.hide();
@@ -736,6 +835,8 @@ const html = `
       button.setAttribute("aria-label", "Close");
       divAlert.appendChild(button);
       parentEl.appendChild(divAlert);
+
+      setTimeout(function() { removeElementsByClass("alert "+ type); }, 3000);
     };
 
     const showInfo = (message) => {
@@ -787,12 +888,21 @@ const html = `
         divRowEntry.appendChild(divPeriod);
         const divEdit = createDiv("col-auto", "Edit");
         divEdit.appendChild(createEditEntry(group, entry));
+        if (entry.fromDate) {
+          divEdit.appendChild(createEntryLink(entry));
+        }
         divRowEntry.appendChild(divEdit);
         divCol.appendChild(divRowEntry);
 
         divRow.appendChild(divCol);
         p.appendChild(divRow);
         groupEl.appendChild(p);
+      });
+
+      // Warning: may not be performant
+      var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+      var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl, { html: true });
       });
     };
 

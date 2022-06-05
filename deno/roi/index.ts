@@ -421,6 +421,13 @@ const html = `
       }
     };
 
+    const removeElementsByClass = (className) => {
+      const elements = document.getElementsByClassName(className);
+      while(elements.length > 0){
+        elements[0].parentNode.removeChild(elements[0]);
+      }
+    };
+
     const getFloatParam = (url, name, defaultValue) => {
       let value = url.searchParams.get(name);
       if (value) {
@@ -638,6 +645,8 @@ const html = `
       button.setAttribute("aria-label", "Close");
       divAlert.appendChild(button);
       parentEl.appendChild(divAlert);
+
+      setTimeout(function() { removeElementsByClass("alert "+ type); }, 3000);
     };
 
     const showInfo = (message) => {
