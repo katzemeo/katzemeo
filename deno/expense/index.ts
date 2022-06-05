@@ -220,16 +220,14 @@ const html = `
               <input class="form-control" type="text" id="add_expense_caption" maxlength="100"/>
             </div>
           </div>
-          <div id="add_entry_dates" class="input-group mb-2">
-            <div class="row align-items-center">
-              <div class="col">
-                <label>From Date</label><br>
-                <input class="form-control" type="date" id="add_from_date"/>              
-              </div>
-              <div class="col">
-                <label>To Date</label><br>
-                <input class="form-control" type="date" id="add_to_date"/>              
-              </div>
+          <div class="input-group mb-2 row align-items-center">
+            <div class="col">
+              <label>From Date</label><br>
+              <input class="form-control" type="date" id="add_from_date"/>
+            </div>
+            <div class="col">
+              <label>To Date</label><br>
+              <input class="form-control" type="date" id="add_to_date"/>
             </div>
           </div>
         </div>
@@ -277,16 +275,14 @@ const html = `
               <input class="form-control" type="text" id="expense_caption" maxlength="100"/>
             </div>
           </div>
-          <div id="entry_dates" class="input-group mb-2">
-            <div class="row align-items-center">
-              <div class="col">
-                <label>From Date</label><br>
-                <input class="form-control" type="date" id="from_date"/>              
-              </div>
-              <div class="col">
-                <label>To Date</label><br>
-                <input class="form-control" type="date" id="to_date"/>              
-              </div>
+          <div class="input-group mb-2 row align-items-center">
+            <div class="col">
+              <label>From Date</label><br>
+              <input class="form-control" type="date" id="from_date"/>
+            </div>
+            <div class="col">
+              <label>To Date</label><br>
+              <input class="form-control" type="date" id="to_date"/>
             </div>
           </div>
         </div>
@@ -575,12 +571,13 @@ const html = `
       const entryCaption = el.value;
       const entry = { name: entryName, caption: entryCaption, freq: {every: 1, period: 'week'}};
 
-      el = document.getElementById("add_from_date");
-      entry.fromDate = el.value ? el.valueAsDate.toISOString() : null;
-      el = document.getElementById("add_to_date");
-      entry.toDate = el.value ? el.valueAsDate.toISOString() : null;
-
       try {
+        checkFromToDates("add_from_date", "add_to_date");
+        el = document.getElementById("add_from_date");
+        entry.fromDate = el.value ? el.valueAsDate.toISOString() : null;
+        el = document.getElementById("add_to_date");
+        entry.toDate = el.value ? el.valueAsDate.toISOString() : null;
+  
         addEntry(groupName, entry);
         const modalEl = document.getElementById('addDialog')
         const modal = bootstrap.Modal.getInstance(modalEl);
@@ -617,6 +614,8 @@ const html = `
       try {
         checkEntryAttr(groupName, entryName, "name");
         checkEntryAttr(groupName, entryCaption, "caption");
+        checkFromToDates("from_date", "to_date");
+
         let entry = findEntry(_group_name, _entry_name);
         if (groupName !== _group_name || entryName !== _entry_name) {
           const checkEntry = findEntry(groupName, entryName);
@@ -647,6 +646,20 @@ const html = `
         calculateTotal();
       } catch (err) {
         writeEditMessage(err.message);
+      }
+    };
+
+    const checkFromToDates = (from, to, msg="Invalid Date(s) and/or Date Range.") => {
+      let fromEl = document.getElementById(from);
+      let toEl = document.getElementById(to);
+      if (!fromEl.value || !toEl.value) {
+        return;
+      }
+      const fromDateTime = fromEl.valueAsDate.getTime();
+      const toDateTime = toEl.valueAsDate.getTime();
+      const delta = toDateTime - fromDateTime;
+      if (isNaN(delta) || delta < 0) {
+        throw new Error(msg);
       }
     };
 
@@ -715,6 +728,7 @@ const html = `
     const addEntry = (groupName, entry) => {
       checkEntryAttr(groupName, entry.name, "name");
       checkEntryAttr(groupName, entry.caption, "caption");
+
       if (findEntry(groupName, entry.name)) {
         throw new Error('Duplicate entry "'+ entry.name +'" in group "'+ groupName +'"');
       }
