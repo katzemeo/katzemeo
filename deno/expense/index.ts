@@ -466,17 +466,17 @@ const html = `
         const delta = NOW.getTime() - nextDue.getTime();
         let periods;
         if (entry.freq.period === "day") {
-          periods = delta / (1000 * 60 * 60 * 24 * entry.freq.every);
-          nextDue = new Date(nextDue.getFullYear(), nextDue.getMonth(), nextDue.getDate() + (periods + 1) * entry.freq.every);
+          periods = Math.trunc(delta / (1000 * 60 * 60 * 24 * entry.freq.every));
+          nextDue = new Date(nextDue.getUTCFullYear(), nextDue.getUTCMonth(), nextDue.getUTCDate() + (periods + 1) * entry.freq.every);
         } else if (entry.freq.period === "week") {
-          periods = delta / (1000 * 60 * 60 * 24 * 7 * entry.freq.every);
-          nextDue = new Date(nextDue.getFullYear(), nextDue.getMonth(), nextDue.getDate() + (periods + 1) * entry.freq.every * 7);
+          periods = Math.trunc(delta / (1000 * 60 * 60 * 24 * 7 * entry.freq.every));
+          nextDue = new Date(nextDue.getUTCFullYear(), nextDue.getUTCMonth(), nextDue.getUTCDate() + (periods + 1) * entry.freq.every * 7);
         } else if (entry.freq.period === "month") {
-          periods = delta / (1000 * 60 * 60 * 24 * 365 / 12 * entry.freq.every);
-          nextDue = new Date(nextDue.getFullYear(), nextDue.getMonth() + (periods + 1) * entry.freq.every, nextDue.getDate());
+          periods = Math.trunc(delta / (1000 * 60 * 60 * 24 * 365 / 12 * entry.freq.every));
+          nextDue = new Date(nextDue.getUTCFullYear(), nextDue.getUTCMonth() + (periods + 1) * entry.freq.every, nextDue.getUTCDate());
         } else if (entry.freq.period === "year") {
-          periods = delta / (1000 * 60 * 60 * 24 * 365 * entry.freq.every);
-          nextDue = new Date(nextDue.getFullYear() + (periods + 1) * entry.freq.every, nextDue.getMonth(), nextDue.getDate());
+          periods = Math.trunc(delta / (1000 * 60 * 60 * 24 * 365 * entry.freq.every));
+          nextDue = new Date(nextDue.getUTCFullYear() + (periods + 1) * entry.freq.every, nextDue.getUTCMonth(), nextDue.getUTCDate());
         }
       }
       return nextDue;
@@ -538,10 +538,12 @@ const html = `
 
       let el = document.getElementById("add_expense_type");
       el.value = groupName;
-
+      el = document.getElementById("add_expense_name");
+      el.value = "";
+      el = document.getElementById("add_expense_caption");
+      el.value = "";
       el = document.getElementById("add_from_date");
-      el.valueAsDate = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
-
+      el.valueAsDate = new Date(Date.UTC(NOW.getFullYear(), NOW.getMonth(), NOW.getDate()));
       el = document.getElementById("add_to_date");
       el.valueAsDate = null;
     };
@@ -568,7 +570,6 @@ const html = `
         el.value = entryName;
         el = document.getElementById("expense_caption");
         el.value = entry.caption;
-
         el = document.getElementById("from_date");
         el.valueAsDate = entry.fromDate ? new Date(entry.fromDate) : null;
         el = document.getElementById("to_date");
@@ -595,9 +596,9 @@ const html = `
       try {
         checkFromToDates("add_from_date", "add_to_date");
         el = document.getElementById("add_from_date");
-        entry.fromDate = el.value ? el.valueAsDate : null;
+        entry.fromDate = el.value ? new Date(el.valueAsDate.getUTCFullYear(), el.valueAsDate.getUTCMonth(), el.valueAsDate.getUTCDate()) : null;
         el = document.getElementById("add_to_date");
-        entry.toDate = el.value ? el.valueAsDate : null;
+        entry.toDate = el.value ? new Date(el.valueAsDate.getUTCFullYear(), el.valueAsDate.getUTCMonth(), el.valueAsDate.getUTCDate()) : null;
   
         addEntry(groupName, entry);
         const modalEl = document.getElementById('addDialog')
@@ -655,9 +656,9 @@ const html = `
         entry.caption = entryCaption;
 
         el = document.getElementById("from_date");
-        entry.fromDate = el.value ? el.valueAsDate : null;
+        entry.fromDate = el.value ? new Date(el.valueAsDate.getUTCFullYear(), el.valueAsDate.getUTCMonth(), el.valueAsDate.getUTCDate()) : null;
         el = document.getElementById("to_date");
-        entry.toDate = el.value ? el.valueAsDate : null;
+        entry.toDate = el.value ? new Date(el.valueAsDate.getUTCFullYear(), el.valueAsDate.getUTCMonth(), el.valueAsDate.getUTCDate()) : null;
         _modified = true;
 
         const modalEl = document.getElementById('editDialog')
@@ -943,28 +944,30 @@ const html = `
 
     const updateExpenseTemplate = (groupName = null) => {
       if (groupName) {
-        _expense_template[groupName].forEach((entry) => {
-          const valueEl = document.getElementById(entry.name);
-          const freqEl = document.getElementById(entry.name+"_freq");
-          const periodEl = document.getElementById(entry.name+"_period");
-          entry.value = valueEl.value ? parseFloat(valueEl.value) : "";
-          entry.freq.every = parseInt(freqEl.value);
-          freqEl.value = entry.freq.every;
-          entry.freq.period = periodEl.value;
-        });
+        updateExpenseGroupTemplate(groupName);
       } else {
         Object.keys(_expense_template).forEach((group) => {
-          _expense_template[group].forEach((entry) => {
-            const valueEl = document.getElementById(entry.name);
-            const freqEl = document.getElementById(entry.name+"_freq");
-            const periodEl = document.getElementById(entry.name+"_period");
-            entry.value = valueEl.value ? parseFloat(valueEl.value) : "";
-            entry.freq.every = parseInt(freqEl.value);
-            freqEl.value = entry.freq.every;
-            entry.freq.period = periodEl.value;
-          });
-        });  
+          updateExpenseGroupTemplate(group);
+        });
       }
+    };
+
+    const updateExpenseGroupTemplate = (groupName) => {
+      _expense_template[groupName].forEach((entry) => {
+        const valueEl = document.getElementById(entry.name);
+        const freqEl = document.getElementById(entry.name+"_freq");
+        const periodEl = document.getElementById(entry.name+"_period");
+        if (valueEl) {
+          entry.value = valueEl.value ? parseFloat(valueEl.value) : "";
+        }
+        if (freqEl) {
+          entry.freq.every = parseInt(freqEl.value);
+          freqEl.value = entry.freq.every;
+        }
+        if (periodEl) {
+          entry.freq.period = periodEl.value;
+        }
+      });
     };
 
     const getExpenseTemplate = () => {
