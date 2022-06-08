@@ -88,6 +88,7 @@ const html = `
           <div>
             <button class="btn btn-primary me-1" type="button" onclick="clearAllValues()" title="Clear All Values"><i class="fa-solid fa-rotate"></i></button>
             <button class="btn btn-primary me-1" type="button" onclick="deleteLocalStorage()" title="Delete Local Storage"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn btn-primary me-1" type="button" onclick="shareURL('home', 'Home')"><i class="fas fa-share"></i></button>
           </div>
         </div>
         <p>
@@ -135,6 +136,7 @@ const html = `
           </div>
           <div>
             <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('variable')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div id="variable_expenses" class="p-1"></div>
@@ -148,6 +150,7 @@ const html = `
           </div>
           <div>
             <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('fixed')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div id="fixed_expenses" class="p-1"></div>
@@ -161,6 +164,7 @@ const html = `
           </div>
           <div>
             <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('intermittent')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div id="intermittent_expenses" class="p-1"></div>
@@ -174,6 +178,7 @@ const html = `
           </div>
           <div>
             <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('discretionary')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div id="discretionary_expenses" class="p-1"></div>
@@ -517,9 +522,20 @@ const html = `
         });
       }
 
-      let viewButtons = document.querySelectorAll('div[name = view-hide-show]');
+      let viewButtons = document.querySelectorAll('button[name = view-hide-show]');
       if (viewButtons && viewButtons.length > 0) {
         viewButtons.forEach((el) => {
+          if (editMode) {
+            el.style = "display: none";
+          } else {
+            el.style = "display: block";
+          }
+        });
+      }
+
+      let viewDivs = document.querySelectorAll('div[name = view-hide-show]');
+      if (viewDivs && viewDivs.length > 0) {
+        viewDivs.forEach((el) => {
           if (editMode) {
             el.style = "padding-top:4px; padding-left:10px; display: none";
           } else {
@@ -1154,6 +1170,15 @@ const html = `
       }
     }
 
+    function exportExpenses() {
+      const data = {}
+      if (calculateTotal(data)) {
+        data["expenses"] = _expense_template;
+      }
+
+      return data;
+    }
+
     function calculateGroupYearly(group) {
       let total = 0;
       group.forEach((entry) => {
@@ -1209,8 +1234,12 @@ const html = `
 
         let el = document.getElementById(name +"_annual_total");
         el.value = CUR(groupTotal);
+        subtotals[name +"_annual_total"] = el.value;
+
         el = document.getElementById(name +"_monthly_total");
         el.value = CUR(groupTotal/12);
+        subtotals[name +"_monthly_total"] = el.value;
+
         total += groupTotal;
       });
 
@@ -1218,12 +1247,19 @@ const html = `
       groupEl.style = "display: block";
       let totalEl = document.getElementById("total_annual_expense");
       totalEl.value = CUR(total);
+      subtotals["total_annual_expense"] = totalEl.value;
+
       totalEl = document.getElementById("total_monthly_expense");
       totalEl.value = CUR(total/12);
+      subtotals["total_monthly_expense"] = totalEl.value;
+
       totalEl = document.getElementById("total_weekly_expense");
       totalEl.value = CUR(total/52);
+      subtotals["total_weekly_expense"] = totalEl.value;
+
       totalEl = document.getElementById("total_daily_expense");
       totalEl.value = CUR(total/365);
+      subtotals["total_daily_expense"] = totalEl.value;
 
       return true;
     }
