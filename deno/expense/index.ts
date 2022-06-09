@@ -136,7 +136,8 @@ const html = `
           </div>
           <div>
             <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('variable')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
-            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)"><i class="fas fa-copy"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="sortEntries('variable')" title="Sort Entries"><i class="fa-solid fa-sort"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)" title="Copy Expenses"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div id="variable_expenses" class="p-1"></div>
@@ -150,7 +151,8 @@ const html = `
           </div>
           <div>
             <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('fixed')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
-            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)"><i class="fas fa-copy"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="sortEntries('fixed')" title="Sort Entries"><i class="fa-solid fa-sort"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)" title="Copy Expenses"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div id="fixed_expenses" class="p-1"></div>
@@ -164,7 +166,8 @@ const html = `
           </div>
           <div>
             <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('intermittent')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
-            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)"><i class="fas fa-copy"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="sortEntries('intermittent')" title="Sort Entries"><i class="fa-solid fa-sort"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)" title="Copy Expenses"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div id="intermittent_expenses" class="p-1"></div>
@@ -178,7 +181,8 @@ const html = `
           </div>
           <div>
             <button name="edit-hide-show" class="btn btn-primary me-1" type="button" onclick="addEntryDialog('discretionary')" title="Edit Entry" style="display: none;"><i class="fa-solid fa-plus"></i></button>
-            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)"><i class="fas fa-copy"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="sortEntries('discretionary')" title="Sort Entries"><i class="fa-solid fa-sort"></i></button>
+            <button name="view-hide-show" class="btn btn-primary me-1" type="button" onclick="copyData(exportExpenses)" title="Copy Expenses"><i class="fas fa-copy"></i></button>
           </div>
         </div>
         <div id="discretionary_expenses" class="p-1"></div>
@@ -318,6 +322,7 @@ const html = `
     var _edit_mode = false;
     var _group_name = null;
     var _entry_name = null;
+    var _sort_order = 0;
 
     const formatDate = (dt, timeZone = TIME_ZONE) => {
       return dt ? new Date(dt).toLocaleDateString('en-us', { timeZone: timeZone, weekday: "short", year: "numeric", month: "short", day: "numeric" }) : "";
@@ -528,7 +533,7 @@ const html = `
           if (editMode) {
             el.style = "display: none";
           } else {
-            el.style = "display: block";
+            el.style = "display: inline";
           }
         });
       }
@@ -914,6 +919,23 @@ const html = `
       });
     };
 
+    const sortEntries = (group) => {
+      _expense_template[group].sort(function (a, b) {
+        if (_sort_order === 1) {
+          return (a.annualValue ?? 0) - (b.annualValue ?? 0);
+        } else if (_sort_order === 2) {
+          return (b.annualValue ?? 0) - (a.annualValue ?? 0);
+        } else if (_sort_order === 3) {
+          return a.caption.localeCompare(b.caption);
+        }
+        return b.caption.localeCompare(a.caption);
+      });
+      buildGroupExpenseUI(group);
+      calculateTotal();
+      _sort_order = (_sort_order + 1) % 4;
+      _modified = true;
+    };
+
     const buildGroupExpenseUI = (group) => {
       const groupEl = document.getElementById(group +"_expenses");
       removeChildren(groupEl);
@@ -925,6 +947,9 @@ const html = `
         const divCol = createDiv("col");
         const label = document.createElement("label");
         label.innerText = entry.caption;
+        if (entry.annualValue) {
+          label.title = "Annual Total: "+ CUR(entry.annualValue);
+        }
         label.appendChild(document.createElement("br"));
         divCol.appendChild(label);
 
@@ -932,7 +957,7 @@ const html = `
         const divValue = createDiv("col-5");
         divValue.appendChild(createValueControl(entry));
         divRowEntry.appendChild(divValue);
-        const divFreq = createDiv("col-auto", "Frequency");
+        const divFreq = createDiv("col-auto", "Every");
         divFreq.appendChild(createFreqControl(group, entry));
         divRowEntry.appendChild(divFreq);
         const divPeriod = createDiv("col-auto", "Period");
@@ -1206,7 +1231,10 @@ const html = `
           } else if (freq > 1) {
             factor /= freq;
           }
-          total += value * factor;
+
+          const annualValue = value * factor;
+          entry["annualValue"] = annualValue;
+          total += annualValue;
         }
       });
       return total;
