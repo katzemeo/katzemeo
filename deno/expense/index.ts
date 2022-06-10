@@ -261,7 +261,7 @@ const html = `
             <div class="text-danger" id="editEntryMessage"></div>
           </div>
           <br/>
-          <div class="input-group mb-2">
+          <div class="input-group mb-2 row align-items-center">
             <div class="col text-start">
               <label>Expense Type</label>
               <select class="form-select" id="expense_type">
@@ -270,6 +270,10 @@ const html = `
                 <option value="intermittent">Intermittent</option>
                 <option value="discretionary">Discretionary</option>
               </select>
+            </div>
+            <div class="col text-start">
+              <label>Value Step</label>
+              <input class="form-control" type="number" id="expense_step" min="1" maxlength="10"/>
             </div>
           </div>
           <div class="input-group mb-2">
@@ -324,6 +328,7 @@ const html = `
     const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "America/Toronto";
     var _guid = null;
     var _profile = null;
+    var _totals = {};
     var _expense_template = null;
     var _edit_mode = false;
     var _group_name = null;
@@ -417,7 +422,7 @@ const html = `
       return el;
     };
 
-    const createValueControl = (entry) => {
+    const createValueControl = (groupName, entry) => {
       const el = document.createElement("input");
       el.id = entry.name;
       el.className = "form-control";
@@ -436,7 +441,7 @@ const html = `
       if (entry.pattern) {
         el.pattern = entry.pattern;
       }
-      el.setAttribute("onchange", "onChangeHandler()");
+      el.setAttribute("onchange", "onChangeHandler('"+ groupName +"')");
       return el;
     };
 
@@ -603,6 +608,8 @@ const html = `
         el.value = groupName;
         el = document.getElementById("expense_name");
         el.value = entryName;
+        el = document.getElementById("expense_step");
+        el.value = entry.step;
         el = document.getElementById("expense_caption");
         el.value = entry.caption;
         el = document.getElementById("expense_notes");
@@ -641,8 +648,7 @@ const html = `
         const modalEl = document.getElementById('addDialog')
         const modal = bootstrap.Modal.getInstance(modalEl);
         modal.hide();
-        buildGroupExpenseUI(groupName);
-        calculateTotal();
+        refreshGroupExpenseUI(groupName);
       } catch (err) {
         writeAddError(err.message);
       }
@@ -657,14 +663,15 @@ const html = `
         const modalEl = document.getElementById('editDialog')
         const modal = bootstrap.Modal.getInstance(modalEl);
         modal.hide();
-        buildGroupExpenseUI(groupName);
-        calculateTotal();
+        refreshGroupExpenseUI(groupName);
       }
     };
 
     const saveExpenseEntry = () => {
       let el = document.getElementById("expense_type");
       const groupName = el.value;
+      el = document.getElementById("expense_step");
+      const valueStep = el.value;
       el = document.getElementById("expense_name");
       const entryName = el.value;
       el = document.getElementById("expense_caption");
@@ -692,6 +699,7 @@ const html = `
           }
         }
 
+        entry.step = valueStep;
         entry.caption = entryCaption;
         entry.notes = entryNotes;
 
@@ -704,8 +712,7 @@ const html = `
         const modalEl = document.getElementById('editDialog')
         const modal = bootstrap.Modal.getInstance(modalEl);
         modal.hide();
-        buildGroupExpenseUI(groupName);
-        calculateTotal();
+        refreshGroupExpenseUI(groupName);
       } catch (err) {
         writeEditMessage(err.message);
       }
@@ -736,7 +743,6 @@ const html = `
             _modified = true;
             buildGroupExpenseUI(_group_name);
             writeEditMessage('Moved entry to position '+ i +'');
-            calculateTotal();
             break;
           }
         }
@@ -753,7 +759,6 @@ const html = `
           _modified = true;
           buildGroupExpenseUI(_group_name);
           writeEditMessage('Moved entry to position '+ (i+2) +'');
-          calculateTotal();
           break;
         }
       }
@@ -838,6 +843,7 @@ const html = `
       el.setAttribute("readonly", "readonly");
       el.id = elementId;
       el.className = "form-control text-danger";
+      el.value = _totals[elementId] ?? 0;
       return el;
     }
 
@@ -950,7 +956,6 @@ const html = `
         return b.caption.localeCompare(a.caption);
       });
       buildGroupExpenseUI(group);
-      calculateTotal();
       _sort_order = (_sort_order + 1) % 4;
       _modified = true;
     };
@@ -983,7 +988,7 @@ const html = `
 
         const divRowEntry = createDiv("row align-items-center gx-1");
         const divValue = createDiv("col-5");
-        divValue.appendChild(createValueControl(entry));
+        divValue.appendChild(createValueControl(group, entry));
         divRowEntry.appendChild(divValue);
         const divFreq = createDiv("col-auto", "Every");
         divFreq.appendChild(createFreqControl(group, entry));
@@ -1127,6 +1132,7 @@ const html = `
             const valueEl = document.getElementById(entry.name);
             valueEl.value = "";
             delete entry.value;
+            delete entry.annualValue;
           });
         });
         calculateTotal();
@@ -1276,10 +1282,15 @@ const html = `
         if (_onChangeTimeoutId) {
           clearTimeout(_onChangeTimeoutId);
         }
-        _onChangeTimeoutId = setTimeout(function() { calculateTotal(); buildGroupExpenseUI(groupName); }, 500);
+        _onChangeTimeoutId = setTimeout(function() { refreshGroupExpenseUI(groupName); }, 500);
       } else {
         calculateTotal();
       }
+    }
+
+    function refreshGroupExpenseUI(groupName) {
+      calculateTotal(_totals);
+      buildGroupExpenseUI(groupName);
     }
 
     function calculateTotal(subtotals = {}) {
