@@ -190,7 +190,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.4 - &copy; 2022-06-03</div>
+    <div class="text-center text-muted fs-6">v0.5 - &copy; 2022-06-09</div>
   </footer>
 
   <!-- Modal: Add Entry -->
@@ -292,6 +292,12 @@ const html = `
             <div class="col">
               <label>To Date</label><br>
               <input class="form-control" type="date" id="to_date"/>
+            </div>
+          </div>
+          <div class="input-group mb-2">
+            <div class="col text-start">
+              <label>Notes</label>
+              <textarea class="form-control" id="expense_notes" rows="2"></textarea>
             </div>
           </div>
         </div>
@@ -492,6 +498,14 @@ const html = `
       return nextDue;
     };
 
+    const createEntryNotes = (entry) => {
+      const el = createDiv("col");
+      const htmlContent = entry.notes;
+      el.style = "padding-left:10px;";
+      el.innerHTML = '<a tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-content="'+ escapeHtml(htmlContent) +'"><i class="fa-solid fa-comment pointer"/></a>';
+      return el;
+    };
+
     const createEntryLink = (entry) => {
       const el = createDiv("col");
       const nextDue = formatDate(calcNexDue(entry));
@@ -591,6 +605,8 @@ const html = `
         el.value = entryName;
         el = document.getElementById("expense_caption");
         el.value = entry.caption;
+        el = document.getElementById("expense_notes");
+        el.value = entry.notes ?? "";
         el = document.getElementById("from_date");
         el.valueAsDate = entry.fromDate ? new Date(entry.fromDate) : null;
         el = document.getElementById("to_date");
@@ -653,6 +669,8 @@ const html = `
       const entryName = el.value;
       el = document.getElementById("expense_caption");
       const entryCaption = el.value;
+      el = document.getElementById("expense_notes");
+      const entryNotes = el.value;
 
       try {
         checkEntryAttr(groupName, entryName, "name");
@@ -675,6 +693,7 @@ const html = `
         }
 
         entry.caption = entryCaption;
+        entry.notes = entryNotes;
 
         el = document.getElementById("from_date");
         entry.fromDate = el.value ? new Date(el.valueAsDate.getUTCFullYear(), el.valueAsDate.getUTCMonth(), el.valueAsDate.getUTCDate()) : null;
@@ -945,13 +964,22 @@ const html = `
         const p = document.createElement("p");
         const divRow = createDiv("row align-items-center gx-1");
         const divCol = createDiv("col");
+        const divRowLabel = createDiv("row align-items-center gx-1");
+        const divLabel = createDiv("col-auto");
         const label = document.createElement("label");
         label.innerText = entry.caption;
         if (entry.annualValue) {
           label.title = "Annual Total: "+ CUR(entry.annualValue);
         }
-        label.appendChild(document.createElement("br"));
-        divCol.appendChild(label);
+        label.setAttribute("for", entry.name);
+        divLabel.appendChild(label);
+        divRowLabel.appendChild(divLabel);
+        if (entry.notes) {
+          const divNotes = createDiv("col-auto");
+          divNotes.appendChild(createEntryNotes(entry));
+          divRowLabel.appendChild(divNotes);
+        }        
+        divCol.appendChild(divRowLabel);
 
         const divRowEntry = createDiv("row align-items-center gx-1");
         const divValue = createDiv("col-5");
@@ -1248,7 +1276,7 @@ const html = `
         if (_onChangeTimeoutId) {
           clearTimeout(_onChangeTimeoutId);
         }
-        _onChangeTimeoutId = setTimeout(function() { buildGroupExpenseUI(groupName); calculateTotal(); }, 500);
+        _onChangeTimeoutId = setTimeout(function() { calculateTotal(); buildGroupExpenseUI(groupName); }, 500);
       } else {
         calculateTotal();
       }
