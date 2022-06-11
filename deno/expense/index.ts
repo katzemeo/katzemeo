@@ -97,21 +97,21 @@ const html = `
         <div id="total_expenses" class="mb-3" style="display: none;">
           <div class="row align-items-end">
             <div class="col">
-              <label>Annual Expenses</label><br>
+              <label for="total_annual_expense">Annual Expenses</label><br>
               <input class="form-control text-danger" type="text" id="total_annual_expense" readonly="readonly"/>
             </div>
             <div class="col">
-              <label>Monthly Expenses</label><br>
+              <label for="total_monthly_expense">Monthly Expenses</label><br>
               <input class="form-control text-danger" type="text" id="total_monthly_expense" readonly="readonly"/>
             </div>
           </div>
           <div class="row align-items-end">
             <div class="col">
-              <label>Weekly Expenses</label><br>
+              <label for="total_weekly_expense">Weekly Expenses</label><br>
               <input class="form-control text-danger" type="text" id="total_weekly_expense" readonly="readonly"/>
             </div>
             <div class="col">
-              <label>Daily Expenses</label><br>
+              <label for="total_daily_expense">Daily Expenses</label><br>
               <input class="form-control text-danger" type="text" id="total_daily_expense" readonly="readonly"/>
             </div>
           </div>
@@ -850,6 +850,7 @@ const html = `
     const createLabelReadonlyInput = (labelText, elementId) => {
       const divCol = createDiv("col");
       const label = document.createElement("label");
+      label.setAttribute("for", elementId);
       label.innerText = labelText;
       divCol.appendChild(label);
       divCol.appendChild(createReadonlyInput(elementId));
@@ -1059,7 +1060,7 @@ const html = `
           res.json().then((data) => {
             _expense_template = data;
             buildExpenseUI();
-            calculateTotal();
+            calculateTotal(_totals);
           });
         } else {
           showError("Unable to lookup Expense template.");
@@ -1110,7 +1111,7 @@ const html = `
             showInfo("Restored from local storage (Updated: "+ formatTime(_state.lastModified) +")");
             if (_expense_template) {
               buildExpenseUI();
-              calculateTotal();
+              calculateTotal(_totals);
             }
             return true;
           } catch (error) {
@@ -1135,7 +1136,7 @@ const html = `
             delete entry.annualValue;
           });
         });
-        calculateTotal();
+        calculateTotal(_totals);
       }
     };
 
