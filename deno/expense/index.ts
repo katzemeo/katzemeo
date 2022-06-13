@@ -655,6 +655,11 @@ const html = `
     };
 
     const deleteExpenseEntry = () => {
+      var r = confirm("Are you sure you want to delete entry?");
+      if (r != true) {
+        return;
+      }
+
       let el = document.getElementById("expense_type");
       const groupName = el.value;
       el = document.getElementById("expense_name");
@@ -1153,6 +1158,7 @@ const html = `
           });
         });
         calculateTotal(_totals);
+        showInfo("Cleared all expenses");
       }
     };
 
@@ -1226,6 +1232,7 @@ const html = `
       let data = exportFn();
       if (data) {
         copyToClipboard(JSON.stringify(data, null, 1));
+        showInfo("Copied expenses to clipboard");
       }
     }
 
