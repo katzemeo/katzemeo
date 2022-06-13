@@ -894,7 +894,13 @@ const html = `
       return divRowEntry;
     }
 
+    var _alertId = null;
     const showAlert = (type, icon, message) => {
+      if (_alertId) {
+        removeElementsByClass("alert");
+        clearTimeout(_alertId);
+      }
+
       const parentEl = document.getElementById("header");
       const divAlert = createDiv("alert "+ type +" d-flex align-items-center alert-dismissible fade show");
       divAlert.role = "alert";
@@ -919,7 +925,7 @@ const html = `
       divAlert.appendChild(button);
       parentEl.appendChild(divAlert);
 
-      setTimeout(function() { removeElementsByClass("alert "+ type); }, 5000);
+      _alertId = setTimeout(function() { removeElementsByClass("alert "+ type); _alertId = null; }, 5000);
     };
 
     const showInfo = (message) => {
@@ -956,6 +962,16 @@ const html = `
         }
         return b.caption.localeCompare(a.caption);
       });
+
+      if (_sort_order === 1) {
+        showInfo("Sort by expense annual value - ASC");
+      } else if (_sort_order === 2) {
+        showInfo("Sort by expense annual value - DESC");
+      } else if (_sort_order === 3) {
+        showInfo("Sort by expense caption - ASC");
+      } else {
+        showInfo("Sort by expense caption - DESC");
+      }
       buildGroupExpenseUI(group);
       _sort_order = (_sort_order + 1) % 4;
       _modified = true;
@@ -1283,7 +1299,7 @@ const html = `
         if (_onChangeTimeoutId) {
           clearTimeout(_onChangeTimeoutId);
         }
-        _onChangeTimeoutId = setTimeout(function() { refreshGroupExpenseUI(groupName); }, 500);
+        _onChangeTimeoutId = setTimeout(function() { refreshGroupExpenseUI(groupName); _onChangeTimeoutId = null;}, 500);
       } else {
         calculateTotal();
       }
