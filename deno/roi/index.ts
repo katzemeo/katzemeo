@@ -154,9 +154,9 @@ const html = `
         <p>
           <div class="row align-items-center">
             <div class="col">
-              <input class="form-check-input" id="seasonally_adjusted_cb" title="Adjust for Seaons" onchange="calculateIncome()" type="checkbox" value="" />
+              <input class="form-check-input" id="seasonally_adjusted_cb" title="Adjust for Seasons" onchange="calculateIncome()" type="checkbox" value="" />
               <label>Season Adjusted $</label><br>
-              <input class="form-control text-muted" type="text" id="seasonally_adjusted_income" readonly="readonly"/>
+              <input class="form-control text-muted" type="text" id="seasonally_adjusted_income" readonly="readonly" title="Income / Revenue (Adjusted)"/>
             </div>
             <div class="col">
               <label>Adjustment Factor(s)</label><br>
@@ -180,6 +180,18 @@ const html = `
             <div class="col">
               <label>Daily Average</label><br>
               <input class="form-control text-muted" type="text" id="daily_average" readonly="readonly"/>
+            </div>
+          </div>
+        </p>
+        <p>
+          <div class="row align-items-center">
+            <div class="col">
+              <label>Weekly Income</label><br>
+              <input class="form-control text-muted" type="text" id="weekly_income" readonly="readonly"/>
+            </div>
+            <div class="col">
+              <label>Bi-weekly Income</label><br>
+              <input class="form-control text-muted" type="text" id="biweekly_income" readonly="readonly"/>
             </div>
           </div>
         </p>
@@ -392,7 +404,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.6 - &copy; 2022-05-11</div>
+    <div class="text-center text-muted fs-6">v0.7 - &copy; 2022-12-22</div>
   </footer>
 
   <script>
@@ -986,6 +998,8 @@ const html = `
         data.seasonally_adjusted_factor = document.getElementById("seasonally_adjusted_factor").value;
         data.total_days = document.getElementById("total_days").value;
         data.daily_average = document.getElementById("daily_average").value;
+        data.weekly_income = document.getElementById("weekly_income").value;
+        data.biweekly_income = document.getElementById("biweekly_income").value;
         data.monthly_income = document.getElementById("monthly_income").value;
         data.annual_income = document.getElementById("annual_income").value;
       }
@@ -1057,6 +1071,10 @@ const html = `
 
           el = document.getElementById("daily_average");
           el.value = CUR(annual_income/365);
+          el = document.getElementById("weekly_income");
+          el.value = CUR(annual_income/52);
+          el = document.getElementById("biweekly_income");
+          el.value = CUR(annual_income/26);
           el = document.getElementById("monthly_income");
           el.value = CUR(annual_income/12);
           el = document.getElementById("annual_income");
