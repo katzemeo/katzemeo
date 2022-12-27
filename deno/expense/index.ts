@@ -92,7 +92,7 @@ const html = `
           </div>
         </div>
         <p>
-        The following application can help you better track your expenses and help ensure a positive cash flow.
+        The Expense application allows you to track your personal expenses and break them down to annual, monthly, weekly, and daily amounts.
         </p>
         <div id="total_expenses" class="mb-3" style="display: none;">
           <div class="row align-items-end">
@@ -190,7 +190,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.5 - &copy; 2022-06-09</div>
+    <div class="text-center text-muted fs-6">v0.6 - &copy; 2022-12-26</div>
   </footer>
 
   <!-- Modal: Add Entry -->
@@ -1266,7 +1266,7 @@ const html = `
       let total = 0;
       group.forEach((entry) => {
         let el = document.getElementById(entry.name);
-        if (el.value) {
+        if (el && el.value) {
           const freqEl = document.getElementById(entry.name+"_freq");
           const periodEl = document.getElementById(entry.name+"_period");
           let value = parseFloat(el.value);
