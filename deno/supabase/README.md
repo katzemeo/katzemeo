@@ -1,5 +1,7 @@
 # katzemeo - deno - Supabase PoC
 
+Proof of concept using Supabase (Postgres database) with Deno to build a simple Todo server and HTTP client to access the API.
+
 ## URL
 Deno Deploy URL https://dash.deno.com/projects/katzemeo
 

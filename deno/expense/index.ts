@@ -399,29 +399,6 @@ const html = `
       return el;
     };
 
-    const createCountControl = (prefix, entry) => {
-      const el = document.createElement("input");
-      el.id = prefix + "_"+ entry.name;
-      el.className = "form-control";
-      el.type = "number";
-      if (entry.multiplier && entry.multiplier !== 1) {
-        el.placeholder = "Count";
-      } else {
-        el.placeholder = "$ Amount";
-      }
-      if (entry.value !== undefined) {
-        el.value = entry.value;
-      }
-      el.min = entry.min ?? 0;
-      if (entry.max !== undefined) {
-        el.max = entry.max;
-      }
-      if (entry.step) {
-        el.step = entry.step;
-      }
-      return el;
-    };
-
     const createValueControl = (groupName, entry) => {
       const el = document.createElement("input");
       el.id = entry.name;
@@ -644,6 +621,11 @@ const html = `
         el = document.getElementById("add_to_date");
         entry.toDate = el.value ? new Date(el.valueAsDate.getUTCFullYear(), el.valueAsDate.getUTCMonth(), el.valueAsDate.getUTCDate()) : null;
   
+        const duplicateEntry = findUniqueEntry(entryName);
+        if (duplicateEntry) {
+          throw new Error('Duplicate entry "'+ entryName +'" in group "'+ duplicateEntry.group +'"');
+        }
+
         addEntry(groupName, entry);
         const modalEl = document.getElementById('addDialog')
         const modal = bootstrap.Modal.getInstance(modalEl);
@@ -662,8 +644,9 @@ const html = `
 
       let el = document.getElementById("expense_type");
       const groupName = el.value;
-      el = document.getElementById("expense_name");
-      const entryName = el.value;
+      //el = document.getElementById("expense_name");
+      //const entryName = el.value;
+      const entryName = _entry_name;
       if (deleteEntry(groupName, entryName)) {
         const modalEl = document.getElementById('editDialog')
         const modal = bootstrap.Modal.getInstance(modalEl);
@@ -677,8 +660,8 @@ const html = `
       const groupName = el.value;
       el = document.getElementById("expense_step");
       const valueStep = el.value;
-      el = document.getElementById("expense_name");
-      const entryName = el.value;
+      entryNameEl = document.getElementById("expense_name");
+      const entryName = entryNameEl.value;
       el = document.getElementById("expense_caption");
       const entryCaption = el.value;
       el = document.getElementById("expense_notes");
@@ -690,18 +673,19 @@ const html = `
         checkFromToDates("from_date", "to_date");
 
         let entry = findEntry(_group_name, _entry_name);
-        if (groupName !== _group_name || entryName !== _entry_name) {
-          const checkEntry = findEntry(groupName, entryName);
-          if (checkEntry) {
-            throw new Error('Duplicate entry "'+ entryName +'" in group "'+ groupName +'"');
+        if (entryName !== _entry_name) {
+          const duplicateEntry = findUniqueEntry(entryName);
+          if (duplicateEntry) {
+            entryNameEl.value = _entry_name;
+            throw new Error('Duplicate entry "'+ entryName +'" in group "'+ duplicateEntry.group +'"');
           }
-
           entry.name = entryName;
-          if (groupName !== _group_name) {
-            deleteEntry(_group_name, entryName);
-            addEntry(groupName, entry);
-            buildGroupExpenseUI(_group_name);
-          }
+        }
+
+        if (groupName !== _group_name) {
+          deleteEntry(_group_name, entryName);
+          addEntry(groupName, entry);
+          buildGroupExpenseUI(_group_name);
         }
 
         entry.step = valueStep;
@@ -767,6 +751,18 @@ const html = `
           break;
         }
       }
+    };
+
+    const findUniqueEntry = (entryName) => {
+      const groupNames = Object.keys(_expense_template);
+      let entry;
+      for (let i=0; i<groupNames.length; i++) {
+        entry = findEntry(groupNames[i], entryName);
+        if (entry) {
+          return { group: groupNames[i], entry: entry } ;
+        }
+      }
+      return null;
     };
 
     const findEntry = (groupName, entryName) => {

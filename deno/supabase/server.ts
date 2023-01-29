@@ -37,6 +37,7 @@ if (env.DB_CERT_FILE || env.DB_CERT) {
 }
 
 console.debug("Creating to DB pool and preparing schema...");
+//console.debug(POOL_OPTIONS);
 const pool = new postgres.Pool(POOL_OPTIONS, POOL_CONNECTIONS);
 const connection = await pool.connect();
 try {
