@@ -34,12 +34,18 @@ const FIELD_MAPPINGS = [
   { source: `Summary`, dest: `summary` },
   { source: `Issue key`, dest: `jira` },
   { source: `Issue Type`, dest: `type`,
-    convert_enum: [ { from: "Feature", to: "FEAT" }, { from: "Epic", to: "EPIC" }, { from: "Story", to: "STORY" }, { from: "Spike", to: "SPIKE" } ]
+    convert_enum: [ { from: "Feature", to: "FEAT" }, { from: "Epic", to: "EPIC" }, { from: "Story", to: "STORY" },
+      { from: "Spike", to: "SPIKE" } ]
   },
-  { source: `Status`, dest: `status` },
+  { source: `Status`, dest: `status`,
+    convert_enum: [ { from: "Backlog", to: "BACKLOG" }, { from: "Blocked", to: "BLOCKED" },
+      { from: "To Do", to: "READY" }, { from: "In Review", to: "INPROGRESS" },
+      { from: "In Progress", to: "INPROGRESS" }, { from: "Done", to: "COMPLETED" } ]
+  },
   { source: `Priority`, dest: `priority`,
     convert_enum: [ { from: "Critical", to: 1 }, { from: "High", to: 2 }, { from: "Medium", to: 3 }, { from: "Low", to: 4 } ]
   },
+  { source: `Custom field (LOB)`, dest: `client` },
   { source: `Assignee`, dest: `assignee` },
   { source: `Reporter`, dest: `reporter` },
   { source: `Creator`, dest: `creator` },
@@ -50,8 +56,16 @@ const FIELD_MAPPINGS = [
   { source: `Fix Version/s`, dest: `release` },
   { source: `Description`, dest: `description` },
   { source: `Sprint`, dest: `sprint` },
+  { source: `Inward issue link (Blocks)`, dest: `blocks` },
+  { source: `Inward issue link (Depends)`, dest: `is_depended_on_by` },
+  { source: `Inward issue link (Relates)`, dest: `relates_to` },
+  { source: `Outward issue link (Blocks)`, dest: `is_blocked_by` },
+  { source: `Outward issue link (Depends)`, dest: `depends_on` },
+  { source: `Outward issue link (Relates)`, dest: `relates_to` },
   { source: `Custom field (Parent Link)`, dest: `parent_jira` },
   { source: `Custom field (Epic Link)`, dest: `parent_jira` },
+  { source: `Custom field (Acceptance Criteria)`, dest: `ac` },
+  { source: `Custom field (T-Shirt Size)`, dest: `t_shirt_size` },
   { source: `Custom field (Story Points)`, dest: `sp`, convert_number: "0" },
 ];
 
@@ -80,9 +94,19 @@ function prepareFieldMappings(mappings: any) {
       };
     } else if (m.convert_date) {
       convertMap[m.source] = function(v) {
-        //console.log(v);
-        //console.log(m.convert_date);
         if (v) {
+          //console.log(v);
+          //console.log(m.convert_date);
+          const yearIndex = v.lastIndexOf('/') + 1;
+          let year = v.substring(yearIndex);
+          year = year.substring(0, year.indexOf(' '));
+          if (year.length == 2) {
+            v = v.substring(0, yearIndex) + "20"+ year + v.substring(yearIndex + 2);
+            //console.warn(`Converting 2 digits year "${year}" to date time with 4 digits ("${v}")!`);
+          } else if (year.length !== 4) {
+            console.error(`Error parsing date time for field ["${m.source}"]!  Please specify year with 4 digits ("${v}").`);
+            return null;
+          }
           return datetime().parse(v, m.convert_date).toISO();
           //return parse(v, m.convert_date);
         }
@@ -137,10 +161,12 @@ export async function transformFiles(args: any, files: string[], output: any, fi
         //console.debug(row);
         const obj: any = {};
         for (const key in row) {
-          if (mapFields.convert[key]) {
-            obj[mapFields.field[key]] = mapFields.convert[key](row[key]);
-          } else if (row[key]) {
-            obj[mapFields.field[key]] = row[key];
+          if (row[key]) {
+            if (mapFields.convert[key]) {
+              obj[mapFields.field[key]] = mapFields.convert[key](row[key]);
+            } else if (mapFields.field[key]) {
+              obj[mapFields.field[key]] = row[key];
+            }
           }
         }
         //console.debug(obj);
@@ -175,14 +201,14 @@ export async function transformFiles(args: any, files: string[], output: any, fi
 
   //console.log(mapItems["FEAT"].items);
   if (args.summary) {
-    mapItems["FEAT"].items.forEach((feat) => {
-      //console.log(feat);
-      console.log(`<<<${feat.jira}: ${feat.summary}>>>`);
-  
+    mapItems["FEAT"].items.forEach((feat) => {  
       if (feat.children) {
+        console.log(`<<<${feat.jira}: ${feat.summary}>>>`);
         feat.children.forEach((epic) => {
           console.log(epic);
         });  
+      } else {
+        console.log(feat);
       }
     });  
   }

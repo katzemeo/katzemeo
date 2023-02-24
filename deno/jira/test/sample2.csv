@@ -1,2 +1,2 @@
-Summary,Issue key,Issue Type,Status,Priority,Assignee,Reporter,Creator,Created,Updated,Resolved,Due Date,Fix Version/s,Description,Custom field (Epic Link),Custom field (Parent Link),Custom field (Story Points),Sprint,Sprint
-Story summary for JIRA-7777,JIRA-7777,Story,Done,Low,ASSIGNEEID2,REPORTERID,CREATORID,25/Jun/2022 10:37 AM,10/Aug/2023 2:25 PM,10/Aug/2023 2:36 PM,,PGM PI8,"As a developer, I want to do X, so that Y, can have Z value",JIRA-1234,,2,SQUAD2 - PI Sprint 5,
+Summary,Issue key,Issue Type,Status,Priority,Assignee,Reporter,Creator,Created,Updated,Resolved,Due Date,Fix Version/s,Description,Custom field (Epic Link),Custom field (Parent Link),Custom field (Story Points),Sprint,Sprint,Unused
+Story summary for JIRA-7777,JIRA-7777,Story,Done,Low,ASSIGNEEID2,REPORTERID,CREATORID,25/Jun/2022 10:37 AM,10/Aug/2023 2:25 PM,10/Aug/223 2:36 PM,,PGM PI8,"As a developer, I want to do X, so that Y, can have Z value",JIRA-1234,,2,SQUAD2 - PI Sprint 5,,
