@@ -6,3 +6,5 @@ deno/mongodb/.env.local
 deno/banking/csvCategorize.exe
 deno/roi/roi.exe
 deno/expense/expense.exe
+deno/jira/deno_run_local.sh
+.DS_Store

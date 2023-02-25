@@ -125,10 +125,10 @@ function prepareFieldMappings(mappings: any) {
 function prepareParentMappings(mappings: any) {
   const map = {};
 
-  // Initialize map hierarcy of all item types and build function to link to parent items
+  // Initialize map hierarchy of all item types and build function to link to parent items
   mappings.forEach((m: any) => {
     map[m.type] = { items: [], lookupByJira: {}, parent_type: m.parent_type, has_children: m.has_children, linkToParent: function(item: any) {
-      if (map[item.type] && map[map[item.type].parent_type]) {
+      if (item.parent_jira && map[item.type] && map[map[item.type].parent_type]) {
         const parentItem = map[map[item.type].parent_type].lookupByJira[item.parent_jira];
         if (parentItem && map[map[item.type].parent_type].has_children) {
           if (!parentItem.children) {
@@ -136,13 +136,29 @@ function prepareParentMappings(mappings: any) {
           }
           parentItem.children.push(item);
         } else {
-          console.log(`Warning: ${item.parent_jira} not found or should not have any children!`);
+          console.log(`Warning: for ${item.jira}, ${item.parent_jira} not found or should not have any children!`);
         }        
       }
     }};
   });
 
   return map;
+}
+
+function computeTotalSP(item: any): number {
+  if (item.children) {
+    let computed_sp: number = 0;
+    item.children.forEach((child:any) => {
+      computed_sp += computeTotalSP(child);
+    });
+    item.computed_sp = computed_sp;
+    return computed_sp;
+  }
+  return item.sp ?? 0;
+}
+
+function printItemSummary(item: any, prefix = "") {
+  console.log(`${prefix}[${item.type}] - ${item.jira} [${item.computed_sp ?? item.sp ?? "N/A"} SP]: ${item.summary}`);
 }
 
 export async function transformFiles(args: any, files: string[], output: any, fieldMappings: any = FIELD_MAPPINGS, parentMappings: any = PARENT_MAPPINGS) {
@@ -199,18 +215,43 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   });
   //console.log(mapItems);
 
+  // Third pass: perform DFS of all features to compute total SP based on Epic/Story breakdown
+  mapItems["FEAT"].items.forEach((feat) => {
+    computeTotalSP(feat);
+  });
+
   //console.log(mapItems["FEAT"].items);
   if (args.summary) {
-    mapItems["FEAT"].items.forEach((feat) => {  
-      if (feat.children) {
-        console.log(`<<<${feat.jira}: ${feat.summary}>>>`);
-        feat.children.forEach((epic) => {
-          console.log(epic);
-        });  
-      } else {
-        console.log(feat);
+    let count = 0;
+    let computed_sp = 0;
+    mapItems["FEAT"].items.forEach((feat) => {
+      if (!args.assignee || feat.assignee == args.assignee) {
+        count++;
+        printItemSummary(feat);
+        computed_sp += feat.computed_sp ?? feat.sp;
+        if (feat.children) {
+          feat.children.forEach((epic) => {
+            printItemSummary(epic, "  * ");
+            if (epic.children) {
+              epic.children.forEach((item) => {
+                printItemSummary(item, "    - ");
+              });
+            }
+          });
+        }
       }
-    });  
+    });
+
+    console.log(`Features matching - Count: ${count}, Computed SP: ${computed_sp}`);
+  }
+
+  if (args.feat) {
+    const feat = mapItems["FEAT"].lookupByJira[args.feat];
+    if (feat) {
+      console.log(feat);
+    } else {
+      console.log(`Warning: Feature ${args.feat} not found!`);
+    }
   }
 
   if (!output) {

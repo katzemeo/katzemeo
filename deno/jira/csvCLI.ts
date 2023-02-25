@@ -15,7 +15,7 @@ const args = parseArgs(Deno.args, {
     d: "."
   },
   boolean: ["debug"],
-  string: ["f", "d"],
+  string: ["f", "d", "feat", "assignee"],
   alias: {
     f: "file",
     d: "dir",
