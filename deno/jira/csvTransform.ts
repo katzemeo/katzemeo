@@ -7,6 +7,54 @@ import { BufReader } from "https://deno.land/std@0.128.0/io/bufio.ts";
 //import { parse } from "https://deno.land/std@0.177.0/datetime/parse.ts";
 import { datetime } from "https://deno.land/x/ptera/mod.ts";
 
+export function checkFiles(args: any, filePaths: string[]) {
+  const dir = normalize(args.dir);
+  const dirInfo = Deno.statSync(dir);
+  //console.log(dirInfo);
+  if (!dirInfo || !dirInfo.isDirectory) {
+    throw new Error(`Invalid or inaccessible directory ${dir}`);
+  }
+
+  if (args.file) {
+    //console.log(args.file);
+    let files: string[];
+    if (Array.isArray(args.file)) {
+      files = args.file;
+    } else {
+      files = [];
+      files.push(args.file);
+    }
+
+    files.forEach((file) => {
+      if (isAbsolute(file)) {
+        filePaths.push(normalize(file));
+      } else {
+        filePaths.push(join(dir, normalize(file)));
+      }
+    });
+  } else {
+    for (const dirEntry of Deno.readDirSync(args.dir)) {
+      if (dirEntry.isFile && dirEntry.name.endsWith(".csv")) {
+        filePaths.push(join(dir, dirEntry.name));
+      }
+    }
+  }
+
+  if (filePaths.length < 1) {
+    throw new Error(`No CSV files found in directory: "${dir}"`);
+  }
+
+  //console.log(filePaths);
+
+  filePaths.forEach((filePath) => {
+    const fileInfo = Deno.statSync(filePath);
+    //console.log(fileInfo);
+    if (!fileInfo || !fileInfo.isFile) {
+      throw new Error(`Invalid or inaccessible file ${filePath}`);
+    }
+  });
+}
+
 const parseCSVText = async (text: string) => {
   const bufReader = new BufReader(new StringReader(text));
   let json: Array<any> = await parseCSV(bufReader, {
@@ -66,7 +114,7 @@ const FIELD_MAPPINGS = [
   { source: `Custom field (Epic Link)`, dest: `parent_jira` },
   { source: `Custom field (Acceptance Criteria)`, dest: `ac` },
   { source: `Custom field (T-Shirt Size)`, dest: `t_shirt_size` },
-  { source: `Custom field (Story Points)`, dest: `sp`, convert_number: "0" },
+  { source: `Custom field (Story Points)`, dest: `estimate`, convert_number: "0" },
 ];
 
 // Information to link child items to parent (if any)
@@ -136,7 +184,7 @@ function prepareParentMappings(mappings: any) {
           }
           parentItem.children.push(item);
         } else {
-          console.log(`Warning: for ${item.jira}, ${item.parent_jira} not found or should not have any children!`);
+          console.warn(`Warning: for ${item.jira}, ${item.parent_jira} not found or should not have any children!`);
         }        
       }
     }};
@@ -145,20 +193,86 @@ function prepareParentMappings(mappings: any) {
   return map;
 }
 
-function computeTotalSP(item: any): number {
-  if (item.children) {
-    let computed_sp: number = 0;
-    item.children.forEach((child:any) => {
-      computed_sp += computeTotalSP(child);
-    });
-    item.computed_sp = computed_sp;
-    return computed_sp;
+class Item extends Object {
+  jira: string;
+  summary: string;
+  type: string;
+  client: string;
+  description: string;
+  status: string;
+  estimate: number;
+  computed_sp: number;
+  completed: number;
+  remaining: number;
+  children: [];
+
+  toString(): string {
+    if (this.children) {
+      let str = fmtItemSummary(this, this.type === "FEAT" ? "" : "* ");
+      this.children.forEach((child) => {
+        str += "\n  ";
+        str += child;
+      });
+    }
+    return fmtItemDetails(this, "    ");
   }
-  return item.sp ?? 0;
+}
+
+function fmtItemSummary(item: any, prefix = ""): string {
+  return `${prefix}[${item.type}] - ${item.jira}:${item.status} [completed: ${item.completed >= 0 ? item.completed : "N/A"}, computed_sp: ${item.computed_sp >= 0 ? item.computed_sp : "N/A"}, estimate: ${item.estimate ?? "N/A"}, depends_on: ${item.depends_on ?? "N"}]: ${item.summary}]`;
+}
+
+function fmtItemDetails(item: any, prefix = ""): string {
+  return fmtItemSummary(item, prefix +"+ ") +
+  `\n${prefix}${prefix}client: ${item.client ?? "N/A"}, p: ${item.priority}, assignee: ${item.assignee ?? "N/A"}, release: ${item.release ?? "N/A"}` +
+  `\n${prefix}${prefix}description: ${item.description ? item.description.substring(0, 80) : "N/A"}` +
+  `\n${prefix}${prefix}ac: ${item.ac ? item.ac.substring(0, 80) : "N/A"}`;
 }
 
 function printItemSummary(item: any, prefix = "") {
-  console.log(`${prefix}[${item.type}] - ${item.jira} [${item.computed_sp ?? item.sp ?? "N/A"} SP]: ${item.summary}`);
+  console.log(fmtItemSummary(item, prefix));
+}
+
+function computeTotalSP(item: any, sortChildren = true): number {
+  if (item.children) {
+    let computed_sp: number = 0;
+    let completed = 0;
+    let remaining = 0;
+    item.children.forEach((child:any) => {
+      computed_sp += computeTotalSP(child);
+      completed += child.completed ?? 0;
+      remaining += child.remaining ?? 0;
+    });
+    item.computed_sp = computed_sp;
+    item.completed = completed;
+    item.remaining = remaining;
+
+    if (item.status === "COMPLETED" && item.remaining > 0) {
+      console.warn(`computeTotalSP() - ${item.jira} is COMPLETED but remaining SP is ${item.remaining}!`);
+    }
+  
+    if (sortChildren) {
+      item.children.sort(function(a: any, b:any): number {
+        const sortKey = "jira";
+        a = a[sortKey];
+        b = b[sortKey];
+        if (!a) a = "";
+        if (!b) b = "";
+        return (a === b ? 0 : a > b ? 1 : -1);
+      });
+    }
+    return computed_sp;
+  }
+
+  const sp = item.estimate ?? 0;
+  if (item.status === "COMPLETED") {
+    console.warn(`computeTotalSP() - ${item.jira} is already COMPLETED!`);
+    item.completed = sp;
+    item.remaining = 0;
+  } else {
+    item.remaining = sp; // Assume full estimate SP remains until item is completed!
+  }
+  return sp;
 }
 
 export async function transformFiles(args: any, files: string[], output: any, fieldMappings: any = FIELD_MAPPINGS, parentMappings: any = PARENT_MAPPINGS) {
@@ -172,24 +286,24 @@ export async function transformFiles(args: any, files: string[], output: any, fi
       const json = await parseCSVFile(files[i]);
       //console.log(json);
 
-      console.info(`File: "${filename}"`);      
+      console.debug(`File: "${filename}"`);      
       json.forEach((row) => {
         //console.debug(row);
-        const obj: any = {};
+        const item: Item = new Item();
         for (const key in row) {
           if (row[key]) {
             if (mapFields.convert[key]) {
-              obj[mapFields.field[key]] = mapFields.convert[key](row[key]);
+              item[mapFields.field[key]] = mapFields.convert[key](row[key]);
             } else if (mapFields.field[key]) {
-              obj[mapFields.field[key]] = row[key];
+              item[mapFields.field[key]] = row[key];
             }
           }
         }
-        //console.debug(obj);
+        //console.debug(item);
 
-        if (mapItems[obj.type]) {
-          mapItems[obj.type].lookupByJira[obj.jira] = obj;
-          mapItems[obj.type].items.push(obj);
+        if (mapItems[item.type]) {
+          mapItems[item.type].lookupByJira[item.jira] = item;
+          mapItems[item.type].items.push(item);
         }
       });
       //console.log(mapItems);
@@ -220,42 +334,50 @@ export async function transformFiles(args: any, files: string[], output: any, fi
     computeTotalSP(feat);
   });
 
-  //console.log(mapItems["FEAT"].items);
-  if (args.summary) {
-    let count = 0;
-    let computed_sp = 0;
-    mapItems["FEAT"].items.forEach((feat) => {
-      if (!args.assignee || feat.assignee == args.assignee) {
-        count++;
+  let count = 0;
+  let computed_sp = 0;
+  let feats: any = [];
+  mapItems["FEAT"].items.forEach((feat: any) => {
+    if ((!args.assignee || feat.assignee == args.assignee) &&
+        (!args.feat || feat.jira == args.feat)) {
+      count++;
+      feats.push(feat);
+      if (args.summary) {
         printItemSummary(feat);
-        computed_sp += feat.computed_sp ?? feat.sp;
-        if (feat.children) {
-          feat.children.forEach((epic) => {
-            printItemSummary(epic, "  * ");
-            if (epic.children) {
-              epic.children.forEach((item) => {
-                printItemSummary(item, "    - ");
-              });
-            }
-          });
-        }
       }
-    });
+      computed_sp += feat.computed_sp ?? feat.estimate;
+      if (feat.children) {
+        feat.children.forEach((epic) => {
+          if (args.summary) {
+            printItemSummary(epic, "  * ");
+          }
+          if (epic.children) {
+            epic.children.forEach((item) => {
+              if (args.summary) {
+                printItemSummary(item, "    + ");
+              }
+            });
+          }
+        });
+      }
+    }
+  });
 
+  if (args.summary) {
     console.log(`Features matching - Count: ${count}, Computed SP: ${computed_sp}`);
   }
 
-  if (args.feat) {
-    const feat = mapItems["FEAT"].lookupByJira[args.feat];
-    if (feat) {
-      console.log(feat);
+  if (feats.length > 0) {
+    if (args.json) {
+      const team: any = { name: "MY TEAM", "squad": "My Squad", "sp_per_day_rate": 0.8, "capacity": 30, items: feats };
+      console.log(JSON.stringify(team, null, 2));
     } else {
-      console.log(`Warning: Feature ${args.feat} not found!`);
+      feats.forEach((feat: any) => {
+        console.log(feat.toString());
+      });
     }
-  }
-
-  if (!output) {
-    console.log();
+  } else {
+    console.warn(`Warning: no matching features found!`);
   }
 
   if (args.debug) {
@@ -263,57 +385,5 @@ export async function transformFiles(args: any, files: string[], output: any, fi
     console.debug(parentMappings);
   }
 
-  if (!output) {
-    console.log();
-  }
-
   return true;
-}
-
-export function checkFiles(args: any, filePaths: string[]) {
-  const dir = normalize(args.dir);
-  const dirInfo = Deno.statSync(dir);
-  //console.log(dirInfo);
-  if (!dirInfo || !dirInfo.isDirectory) {
-    throw new Error(`Invalid or inaccessible directory ${dir}`);
-  }
-
-  if (args.file) {
-    //console.log(args.file);
-    let files: string[];
-    if (Array.isArray(args.file)) {
-      files = args.file;
-    } else {
-      files = [];
-      files.push(args.file);
-    }
-
-    files.forEach((file) => {
-      if (isAbsolute(file)) {
-        filePaths.push(normalize(file));
-      } else {
-        filePaths.push(join(dir, normalize(file)));
-      }
-    });
-  } else {
-    for (const dirEntry of Deno.readDirSync(args.dir)) {
-      if (dirEntry.isFile && dirEntry.name.endsWith(".csv")) {
-        filePaths.push(join(dir, dirEntry.name));
-      }
-    }
-  }
-
-  if (filePaths.length < 1) {
-    throw new Error(`No CSV files found in directory: "${dir}"`);
-  }
-
-  //console.log(filePaths);
-
-  filePaths.forEach((filePath) => {
-    const fileInfo = Deno.statSync(filePath);
-    //console.log(fileInfo);
-    if (!fileInfo || !fileInfo.isFile) {
-      throw new Error(`Invalid or inaccessible file ${filePath}`);
-    }
-  });
 }
