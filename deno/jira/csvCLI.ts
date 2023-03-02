@@ -15,7 +15,7 @@ const args = parseArgs(Deno.args, {
     d: "."
   },
   boolean: ["debug", "json"],
-  string: ["f", "d", "feat", "assignee"],
+  string: ["f", "d", "feat", "assignee", "exclude"],
   alias: {
     f: "file",
     d: "dir",
@@ -33,11 +33,16 @@ if (args.help || !checkUsage(args)) {
 Examples:
   csv2json.exe -d c:\\export\\jira -f "PI_squad2_features.csv" -f "PI_squad2_items.csv"
   csv2json.exe -d c:\\export\\jira --summary
+  csv2json.exe -d c:\\export\\jira -s --exclude "JIRA-1234" --feat "FEAT-9105"
+
 
 Usage:
   -f or --file <CSV file> : specify the path to CSV file (repeat option to specify multiple files)
   -d or --dir <source dir> : specify the folder containing CSV file(s) to parse (defaults to current directory)
   -s or --summary : print issue summary for each CSV file as well as grand totals
+  --feat : specify the feature ID(s) to include
+  --assignee : specify the feture assignee to include
+  --exclude : specify the feature or epic parent IDs to exclude
   --debug : print diagnostics for validating the processing
   -h or --help : show this usage help`);
 } else {

@@ -175,17 +175,22 @@ function prepareParentMappings(mappings: any) {
 
   // Initialize map hierarchy of all item types and build function to link to parent items
   mappings.forEach((m: any) => {
-    map[m.type] = { items: [], lookupByJira: {}, parent_type: m.parent_type, has_children: m.has_children, linkToParent: function(item: any) {
-      if (item.parent_jira && map[item.type] && map[map[item.type].parent_type]) {
-        const parentItem = map[map[item.type].parent_type].lookupByJira[item.parent_jira];
-        if (parentItem && map[map[item.type].parent_type].has_children) {
-          if (!parentItem.children) {
-            parentItem.children = [];
-          }
-          parentItem.children.push(item);
-        } else {
-          console.warn(`Warning: for ${item.jira}, ${item.parent_jira} not found or should not have any children!`);
-        }        
+    map[m.type] = { items: [], lookupByJira: {}, parent_type: m.parent_type, has_children: m.has_children,
+      linkToParent: function(item: any, exclude: string="") {
+      if (item.parent_jira) {
+        if ((!exclude || exclude.indexOf(item.parent) < 0) && map[item.type] && map[map[item.type].parent_type]) {
+          const parentItem = map[map[item.type].parent_type].lookupByJira[item.parent_jira];
+          if (parentItem && map[map[item.type].parent_type].has_children) {
+            if (!parentItem.children) {
+              parentItem.children = [];
+            }
+            parentItem.children.push(item);
+          } else {
+            console.warn(`Warning: for ${item.jira}, ${item.parent_jira} not found or should not have any children!`);
+          }      
+        }
+      } else if (item.type !== "FEAT") {
+        console.warn(`Warning: Item ${item.jira} does not specify a parent FEAT or EPIC!`);
       }
     }};
   });
@@ -208,22 +213,26 @@ class Item extends Object {
 
   toString(): string {
     if (this.children) {
-      let str = fmtItemSummary(this, this.type === "FEAT" ? "" : "* ");
+      let str = fmtItemSummary(this, this.type === "FEAT" ? "" : "# ");
       this.children.forEach((child) => {
         str += "\n  ";
         str += child;
       });
+      return str;
     }
     return fmtItemDetails(this, "    ");
   }
 }
 
 function fmtItemSummary(item: any, prefix = ""): string {
-  return `${prefix}[${item.type}] - ${item.jira}:${item.status} [completed: ${item.completed >= 0 ? item.completed : "N/A"}, computed_sp: ${item.computed_sp >= 0 ? item.computed_sp : "N/A"}, estimate: ${item.estimate ?? "N/A"}, depends_on: ${item.depends_on ?? "N"}]: ${item.summary}]`;
+  if (item.type === "FEAT" || item.type === "EPIC") {
+    return `${prefix}[${item.type}] - ${item.jira} : ${item.status} [completed: ${item.completed >= 0 ? item.completed : "N/A"}, remaining: ${item.remaining >= 0 ? item.remaining : "N/A"}, computed_sp: ${item.computed_sp >= 0 ? item.computed_sp : "N/A"}, estimate: ${item.estimate ?? "N/A"}, depends_on: ${item.depends_on ?? "None"}]: ${item.summary}]`;
+  }
+  return `${prefix}[${item.type}] - ${item.jira} : ${item.status} [SP: ${item.estimate ?? "N/A"}, depends_on: ${item.depends_on ?? "None"}]: ${item.summary}]`;
 }
 
 function fmtItemDetails(item: any, prefix = ""): string {
-  return fmtItemSummary(item, prefix +"+ ") +
+  return fmtItemSummary(item, item.type === "FEAT" ? "" : prefix +"+ ") +
   `\n${prefix}${prefix}client: ${item.client ?? "N/A"}, p: ${item.priority}, assignee: ${item.assignee ?? "N/A"}, release: ${item.release ?? "N/A"}` +
   `\n${prefix}${prefix}description: ${item.description ? item.description.substring(0, 80) : "N/A"}` +
   `\n${prefix}${prefix}ac: ${item.ac ? item.ac.substring(0, 80) : "N/A"}`;
@@ -324,7 +333,7 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   // Second pass: For all objects of each type, locate parent (if any) add as a child
   Object.entries(mapItems).forEach(([key, entry]: [any, any]) => {
     entry.items.forEach((item: any) => {
-      mapItems[item.type].linkToParent(item);
+      mapItems[item.type].linkToParent(item, args.exclude);
     });
   });
   //console.log(mapItems);
@@ -336,20 +345,36 @@ export async function transformFiles(args: any, files: string[], output: any, fi
 
   let count = 0;
   let computed_sp = 0;
+  let completed_sp = 0;
+  let remaining_sp = 0;
   let feats: any = [];
+  mapItems["FEAT"].items.sort(function(a: any, b:any): number {
+    const sortKey = "summary";
+    a = a[sortKey];
+    b = b[sortKey];
+    if (!a) a = "";
+    if (!b) b = "";
+    return (a === b ? 0 : a > b ? 1 : -1);
+  });
   mapItems["FEAT"].items.forEach((feat: any) => {
     if ((!args.assignee || feat.assignee == args.assignee) &&
-        (!args.feat || feat.jira == args.feat)) {
+        (!args.feat || args.feat.indexOf(feat.jira) >= 0) &&
+        (!args.exclude || args.exclude.indexOf(feat.jira) < 0)) {
       count++;
       feats.push(feat);
       if (args.summary) {
+        console.log("=".repeat(150));
         printItemSummary(feat);
+        console.log("=".repeat(150));
       }
       computed_sp += feat.computed_sp ?? feat.estimate;
+      completed_sp += feat.completed ?? 0;
+      remaining_sp += feat.remaining;
+
       if (feat.children) {
         feat.children.forEach((epic) => {
           if (args.summary) {
-            printItemSummary(epic, "  * ");
+            printItemSummary(epic, "  # ");
           }
           if (epic.children) {
             epic.children.forEach((item) => {
@@ -363,19 +388,23 @@ export async function transformFiles(args: any, files: string[], output: any, fi
     }
   });
 
-  if (args.summary) {
-    console.log(`Features matching - Count: ${count}, Computed SP: ${computed_sp}`);
-  }
-
   if (feats.length > 0) {
     if (args.json) {
       const team: any = { name: "MY TEAM", "squad": "My Squad", "sp_per_day_rate": 0.8, "capacity": 30, items: feats };
       console.log(JSON.stringify(team, null, 2));
     } else {
-      feats.forEach((feat: any) => {
-        console.log(feat.toString());
-      });
+      if (!args.summary) {
+        feats.forEach((feat: any) => {
+          console.log("=".repeat(150));
+          console.log(feat.toString());
+        });  
+      }
     }
+
+    console.log();
+    console.log("*".repeat(150));
+    console.log(`*** TOTALS *** Features matching - Count: ${count}, Computed SP: ${computed_sp}, Completed SP: ${completed_sp}, Remaining SP: ${remaining_sp}`);
+    console.log("*".repeat(150));
   } else {
     console.warn(`Warning: no matching features found!`);
   }
