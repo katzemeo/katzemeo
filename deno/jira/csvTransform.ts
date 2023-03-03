@@ -293,9 +293,9 @@ export async function transformFiles(args: any, files: string[], output: any, fi
     try {
       const filename = basename(files[i]);
       const json = await parseCSVFile(files[i]);
-      //console.log(json);
-
-      console.debug(`File: "${filename}"`);      
+      if (args.debug) {
+        console.debug(`File: "${filename}"`);
+      }
       json.forEach((row) => {
         //console.debug(row);
         const item: Item = new Item();
@@ -390,7 +390,7 @@ export async function transformFiles(args: any, files: string[], output: any, fi
 
   if (feats.length > 0) {
     if (args.json) {
-      const team: any = { name: "MY TEAM", "squad": "My Squad", "sp_per_day_rate": 0.8, "capacity": 30, items: feats };
+      const team: any = { name: "PI TEAM", squad: "My Squad", sp_per_day_rate: 0.8, capacity: 30, items: feats };
       console.log(JSON.stringify(team, null, 2));
     } else {
       if (!args.summary) {
@@ -399,12 +399,11 @@ export async function transformFiles(args: any, files: string[], output: any, fi
           console.log(feat.toString());
         });  
       }
+      console.log();
+      console.log("*".repeat(150));
+      console.log(`*** TOTALS *** Features matching - Count: ${count}, Computed SP: ${computed_sp}, Completed SP: ${completed_sp}, Remaining SP: ${remaining_sp}`);
+      console.log("*".repeat(150));
     }
-
-    console.log();
-    console.log("*".repeat(150));
-    console.log(`*** TOTALS *** Features matching - Count: ${count}, Computed SP: ${computed_sp}, Completed SP: ${completed_sp}, Remaining SP: ${remaining_sp}`);
-    console.log("*".repeat(150));
   } else {
     console.warn(`Warning: no matching features found!`);
   }
