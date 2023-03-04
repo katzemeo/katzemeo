@@ -1,9 +1,9 @@
 import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.177.0/path/mod.ts";
-import { parse as parseCSV } from "https://deno.land/std@0.128.0/encoding/csv.ts";
+import { parse as parseCSV } from "https://deno.land/std@0.134.0/encoding/csv.ts";
 //import { StringReader } from "https://deno.land/std@0.177.0/io/mod.ts";
 //import { BufReader } from "https://deno.land/std@0.177.0/io/mod.ts";
-import { StringReader } from "https://deno.land/std@0.128.0/io/readers.ts";
-import { BufReader } from "https://deno.land/std@0.128.0/io/bufio.ts";
+import { StringReader } from "https://deno.land/std@0.134.0/io/readers.ts";
+import { BufReader } from "https://deno.land/std@0.134.0/io/bufio.ts";
 //import { parse } from "https://deno.land/std@0.177.0/datetime/parse.ts";
 import { datetime } from "https://deno.land/x/ptera/mod.ts";
 
@@ -53,6 +53,18 @@ export function checkFiles(args: any, filePaths: string[]) {
       throw new Error(`Invalid or inaccessible file ${filePath}`);
     }
   });
+
+  if (args.base) {
+    const baseFile = args.base;
+    const fileInfo = Deno.statSync(baseFile);
+    if (!fileInfo || !fileInfo.isFile || !baseFile.endsWith(".json")) {
+      throw new Error(`Invalid or inaccessible base JSON file "${baseFile}"`);
+    }
+  }
+
+  if (args.diff && !args.base) {
+    throw new Error(`Diff option requires base JSON file to be specified!`);
+  }
 }
 
 const parseCSVText = async (text: string) => {
@@ -76,9 +88,12 @@ const parseCSVFile = async (csvFile: string) => {
   }
 };
 
+var base: any = { added: {}, updated: {}, unchanged: {}, map: {} };
+
 // Information to map fields and convert value types as needed
 const DATE_TIME_FMT = "d-MMM-YYYY h:mm a";
 const FIELD_MAPPINGS = [
+  { source: `Theme`, dest: `theme` },
   { source: `Summary`, dest: `summary` },
   { source: `Issue key`, dest: `jira` },
   { source: `Issue Type`, dest: `type`,
@@ -87,7 +102,7 @@ const FIELD_MAPPINGS = [
   },
   { source: `Status`, dest: `status`,
     convert_enum: [ { from: "Backlog", to: "BACKLOG" }, { from: "Blocked", to: "BLOCKED" },
-      { from: "To Do", to: "READY" }, { from: "In Review", to: "INPROGRESS" },
+      { from: "Pending", to: "PENDING" }, { from: "To Do", to: "READY" }, { from: "In Review", to: "INPROGRESS" },
       { from: "In Progress", to: "INPROGRESS" }, { from: "Done", to: "COMPLETED" } ]
   },
   { source: `Priority`, dest: `priority`,
@@ -211,10 +226,18 @@ class Item extends Object {
   remaining: number;
   children: [];
 
+  constructor(obj: any = null) {
+    super();
+    if (obj) {
+      Object.assign(this, obj);
+      Object.setPrototypeOf(this, Item.prototype);
+    }
+  }
+
   toString(): string {
     if (this.children) {
       let str = fmtItemSummary(this, this.type === "FEAT" ? "" : "# ");
-      this.children.forEach((child) => {
+      this.children.forEach((child: any) => {
         str += "\n  ";
         str += child;
       });
@@ -242,7 +265,45 @@ function printItemSummary(item: any, prefix = "") {
   console.log(fmtItemSummary(item, prefix));
 }
 
+function compare(a: any, b: any, attr: string) {
+  a = a[attr];
+  b = b[attr];
+  if (!a) a = "";
+  if (!b) b = "";
+  return (a === b ? 0 : a > b ? 1 : -1);
+}
+
 function computeTotalSP(item: any, sortChildren = true): number {
+  // Compare with base data, build change log, and merge
+  const baseItem = base.map[item.jira];
+  if (baseItem) {
+    //console.log(`Merging item ${item.jira}`);
+
+    // Compare base and item and checked if any values changed
+    baseItem.matched = true;
+    let diffs = Object.fromEntries(Object.entries(item).filter(([k, v]) =>
+      k !== "completed" && k != "remaining" && k != "computed_sp" && k != "children" && baseItem[k] !== v))
+    if (Object.keys(diffs).length > 0) {
+      let changes: any = { diffs: [], summary: item.summary };
+      Object.entries(diffs).forEach(([k, v]) => {
+        let c = {};
+        c[k] = `${baseItem[k]} -> ${v}`;
+        changes.diffs.push(c);
+      });
+      //console.log(changes);
+      base.updated[item.jira] = changes;
+    } else {
+      base.unchanged[item.jira] = item.summary;
+    }
+    let merged = Object.assign({}, base.map[item.jira], item);
+    item = Object.assign(item, merged);
+    Object.setPrototypeOf(item, Item.prototype); // Needed for Item.toString()!
+  } else {
+    //console.log(`Adding item ${item.jira}`);
+    let changes: any = { estimate: item.estimate, summary: item.summary };
+    base.added[item.jira] = changes;
+  }
+
   if (item.children) {
     let computed_sp: number = 0;
     let completed = 0;
@@ -262,12 +323,7 @@ function computeTotalSP(item: any, sortChildren = true): number {
   
     if (sortChildren) {
       item.children.sort(function(a: any, b:any): number {
-        const sortKey = "jira";
-        a = a[sortKey];
-        b = b[sortKey];
-        if (!a) a = "";
-        if (!b) b = "";
-        return (a === b ? 0 : a > b ? 1 : -1);
+        return compare(a, b, "jira");
       });
     }
     return computed_sp;
@@ -281,10 +337,35 @@ function computeTotalSP(item: any, sortChildren = true): number {
   } else {
     item.remaining = sp; // Assume full estimate SP remains until item is completed!
   }
+
   return sp;
 }
 
+function mapItemsByJira(item: any) {
+  if (item.children) {
+    item.children.forEach((child:any) => {
+      mapItemsByJira(child);
+    });
+  }
+
+  if (item.jira) {
+    base.map[item.jira] = item;
+  }
+}
+
 export async function transformFiles(args: any, files: string[], output: any, fieldMappings: any = FIELD_MAPPINGS, parentMappings: any = PARENT_MAPPINGS) {
+  let teamKeys = ["computed_sp", "completed", "remaining"];
+  if (args.base) {
+    const text = await Deno.readTextFile(args.base);
+    const json = JSON.parse(text);
+    json.items.forEach((child:any) => {
+      mapItemsByJira(child);
+    });
+    teamKeys.forEach((k) => {
+      base[k] = json[k];
+    });
+  }
+
   const mapFields = prepareFieldMappings(fieldMappings);
   const mapItems = prepareParentMappings(parentMappings);
 
@@ -343,23 +424,46 @@ export async function transformFiles(args: any, files: string[], output: any, fi
     computeTotalSP(feat);
   });
 
+  if (args.debug) {
+    console.log(base);
+  }
+
   let count = 0;
   let computed_sp = 0;
   let completed_sp = 0;
   let remaining_sp = 0;
   let feats: any = [];
   mapItems["FEAT"].items.sort(function(a: any, b:any): number {
-    const sortKey = "summary";
-    a = a[sortKey];
-    b = b[sortKey];
-    if (!a) a = "";
-    if (!b) b = "";
-    return (a === b ? 0 : a > b ? 1 : -1);
+    let result = compare(a, b, "theme");
+    if (result === 0) {
+      result = compare(a, b, "summary");
+    }
+    return result;
   });
   mapItems["FEAT"].items.forEach((feat: any) => {
     if ((!args.assignee || feat.assignee == args.assignee) &&
         (!args.feat || args.feat.indexOf(feat.jira) >= 0) &&
         (!args.exclude || args.exclude.indexOf(feat.jira) < 0)) {
+
+      // Compare base and item SP to see if any progress / scope changed
+      if (args.diff) {
+        const baseItem = base.map[feat.jira];
+        if (baseItem) {
+          teamKeys.forEach((k) => {
+            if (baseItem[k] !== feat[k]) {
+              let changes: any = base.updated[feat.jira];
+              if (!changes) {
+                changes = { diffs: [], summary: feat.summary };
+                base.updated[feat.jira] = changes;
+              }
+              let c = {};
+              c[k] = `${baseItem[k]} -> ${feat[k]}`;
+              changes.diffs.push(c);
+            }  
+          });  
+        }
+      }
+
       count++;
       feats.push(feat);
       if (args.summary) {
@@ -389,12 +493,29 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   });
 
   if (feats.length > 0) {
+    const team: any = { name: "PI TEAM", squad: "My Squad", sp_per_day_rate: 0.8, capacity: 5*8, computed_sp: computed_sp, completed: completed_sp, remaining: remaining_sp, items: feats };
     if (args.json) {
-      const team: any = { name: "PI TEAM", squad: "My Squad", sp_per_day_rate: 0.8, capacity: 30, items: feats };
       console.log(JSON.stringify(team, null, 2));
+    } else if (args.diff) {
+        // Compare totals to see if any progress / scope changed
+        teamKeys.forEach((k) => {
+          if (base[k] !== team[k]) {
+            base.updated[k] = `${base[k]} -> ${team[k]}`;
+          }  
+        });
+        console.log("#".repeat(150));
+        console.log(base.updated);
+        console.log("+".repeat(150));
+        console.log(base.added);
     } else {
       if (!args.summary) {
+        let theme = "";
         feats.forEach((feat: any) => {
+          if (feat.theme && feat.theme !== theme) {
+            theme = feat.theme;
+            console.log("#".repeat(150));
+            console.log(theme);
+          }  
           console.log("=".repeat(150));
           console.log(feat.toString());
         });  

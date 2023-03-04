@@ -1,4 +1,4 @@
-import { parse as parseArgs } from "https://deno.land/std@0.128.0/flags/mod.ts"
+import { parse as parseArgs } from "https://deno.land/std@0.134.0/flags/mod.ts"
 import { checkFiles, transformFiles } from "./csvTransform.ts"
 
 function checkUsage(args: any) {
@@ -14,8 +14,8 @@ const args = parseArgs(Deno.args, {
     debug: false,
     d: "."
   },
-  boolean: ["debug", "json"],
-  string: ["f", "d", "feat", "assignee", "exclude"],
+  boolean: ["debug", "json", "diff"],
+  string: ["f", "d", "base", "feat", "assignee", "exclude"],
   alias: {
     f: "file",
     d: "dir",
@@ -40,9 +40,12 @@ Usage:
   -f or --file <CSV file> : specify the path to CSV file (repeat option to specify multiple files)
   -d or --dir <source dir> : specify the folder containing CSV file(s) to parse (defaults to current directory)
   -s or --summary : print issue summary for each CSV file as well as grand totals
+  --base : specify the base snapshot JSON file for comparison
   --feat : specify the feature ID(s) to include
   --assignee : specify the feture assignee to include
   --exclude : specify the feature or epic parent IDs to exclude
+  --diff : compare items with base snapshot and show differences
+  --json : output JSON file for import into pippi and serve as new base snapshot
   --debug : print diagnostics for validating the processing
   -h or --help : show this usage help`);
 } else {
@@ -51,6 +54,9 @@ Usage:
     checkFiles(args, files);
     await transformFiles(args, files, null);
   } catch (err) {
+    if (args.debug) {
+      console.error(err);
+    }
     console.error(`Error: ${err.message}`);
   }
 }
