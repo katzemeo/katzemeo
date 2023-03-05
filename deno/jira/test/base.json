@@ -17,6 +17,8 @@
       "computed_sp": 8,
       "completed": 3,
       "remaining": 5,
+      "sprint_start": "SPRINT 1",
+      "sprint_end": "SPRINT 2",
       "children": [
         {
           "jira": "JIRA-1234",
@@ -70,7 +72,6 @@
             }
           ],
           "priority": 1,
-          "assignee": "ASSIGNEEID",
           "reporter": "REPORTERID",
           "creator": "CREATORID",
           "created": "2022-11-23T10:37:00.000-05:00",
@@ -106,7 +107,8 @@
       "creator": "CREATORID",
       "created": "2022-09-01T08:13:00.000-04:00",
       "updated": "2023-01-19T08:28:00.000-05:00",
-      "resolved": "2023-01-19T08:28:00.000-05:00",
+      "resolved": "",
+      "due": "2023-04-19T08:28:00.000-05:00",
       "release": "PGM PI8",
       "theme": "My Feature Theme 2 for FEAT-9105"
     }
