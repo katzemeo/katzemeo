@@ -88,7 +88,7 @@ const parseCSVFile = async (csvFile: string) => {
   }
 };
 
-var base: any = { added: {}, updated: {}, unchanged: {}, map: {} };
+var base: any = { added: {}, updated: {}, unchanged: {}, removed: {}, map: {} };
 
 // Information to map fields and convert value types as needed
 const DATE_TIME_FMT = "d-MMM-YYYY h:mm a";
@@ -353,6 +353,13 @@ function mapItemsByJira(item: any) {
   }
 }
 
+function jsonReplacer(key: string, value: any) {
+  if (key === "matched") {
+    return undefined;
+  }
+  return value;
+}
+
 export async function transformFiles(args: any, files: string[], output: any, fieldMappings: any = FIELD_MAPPINGS, parentMappings: any = PARENT_MAPPINGS) {
   let teamKeys = ["computed_sp", "completed", "remaining"];
   if (args.base) {
@@ -495,7 +502,7 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   if (feats.length > 0) {
     const team: any = { name: "PI TEAM", squad: "My Squad", sp_per_day_rate: 0.8, capacity: 5*8, computed_sp: computed_sp, completed: completed_sp, remaining: remaining_sp, items: feats };
     if (args.json) {
-      console.log(JSON.stringify(team, null, 2));
+      console.log(JSON.stringify(team, jsonReplacer, 2));
     } else if (args.diff) {
         // Compare totals to see if any progress / scope changed
         teamKeys.forEach((k) => {
@@ -503,10 +510,20 @@ export async function transformFiles(args: any, files: string[], output: any, fi
             base.updated[k] = `${base[k]} -> ${team[k]}`;
           }  
         });
+
+        Object.values(base.map).forEach((item: any) => {
+          if (!item.matched) {
+            let changes: any = { estimate: item.estimate, summary: item.summary };
+            base.removed[item.jira] = changes;    
+          }
+        });
+
         console.log("#".repeat(150));
         console.log(base.updated);
         console.log("+".repeat(150));
         console.log(base.added);
+        console.log("-".repeat(150));
+        console.log(base.removed);
     } else {
       if (!args.summary) {
         let theme = "";
