@@ -64,9 +64,9 @@ export function checkFiles(args: any, filePaths: string[]) {
 }
 
 const parseCSVText = async (args: any, text: string, mapFields: any) => {
-  let endIndex = text.indexOf('\r');
+  let endIndex = text.indexOf('\n');
   if (endIndex < 0) {
-    endIndex = text.indexOf('\n');
+    endIndex = text.indexOf('\r');
   }
   const headerLine = text.substring(0, endIndex);
   //console.log(headerLine);
@@ -82,10 +82,11 @@ const parseCSVText = async (args: any, text: string, mapFields: any) => {
       uniqueHeaders[i] = `${key} ${String(fcount[key]).padStart(3, '0')}`;
     }
 
-    if (args.debug) {
-      if (!mapFields.field[key]) {
+    if (!mapFields.field[key]) {
+      if (args.debug) {
         console.warn(`Unknown field "${key}"... Ignoring`);
-      }  
+      }
+      uniqueHeaders[i] = "Unknown (ignored)";
     }
   }
 
@@ -123,7 +124,7 @@ const FIELD_MAPPINGS = [
       { from: "Spike", to: "SPIKE" } ]
   },
   { source: `Status`, dest: `status`,
-    convert_enum: [ { from: "Backlog", to: "BACKLOG" }, { from: "Blocked", to: "BLOCKED" },
+    convert_enum: [ { from: "Backlog", to: "BACKLOG" }, { from: "Feature Ready", to: "READY" }, { from: "Blocked", to: "BLOCKED" },
       { from: "Pending", to: "PENDING" }, { from: "To Do", to: "READY" }, { from: "In Review", to: "INPROGRESS" },
       { from: "In Progress", to: "INPROGRESS" }, { from: "Done", to: "COMPLETED" } ]
   },
@@ -309,7 +310,9 @@ function computeTotalSP(item: any, sortChildren = true): number {
     // Compare base and item and checked if any values changed
     baseItem.matched = true;
     let diffs = Object.fromEntries(Object.entries(item).filter(([k, v]) =>
-      k !== "completed" && k != "remaining" && k != "computed_sp" && k != "children" && baseItem[k] !== v))
+      k !== "completed" && k != "remaining" && k != "computed_sp" &&
+      k !== "updated" && k != "resolved" && k != "assignee" && k !== "summary" && k != "description" && k != "ac" &&
+      k != "children" && baseItem[k] !== v))
     if (Object.keys(diffs).length > 0) {
       let changes: any = { diffs: [], summary: item.summary };
       Object.entries(diffs).forEach(([k, v]) => {
@@ -404,7 +407,7 @@ function setOrAppend(target: any, key: string, value: any) {
 }
 
 export async function transformFiles(args: any, files: string[], output: any, fieldMappings: any = FIELD_MAPPINGS, parentMappings: any = PARENT_MAPPINGS) {
-  let teamKeys = ["name", "squad", "sp_per_day_rate", "capacity", "computed_sp", "completed", "remaining", "members"];
+  let teamKeys = ["name", "squad", "sp_per_day_rate", "capacity", "computed_sp", "completed", "remaining", "dates", "sprints", "members"];
   if (args.base) {
     const text = await Deno.readTextFile(args.base);
     const json = JSON.parse(text);
@@ -428,28 +431,25 @@ export async function transformFiles(args: any, files: string[], output: any, fi
         console.debug(`File: "${filename}"`);
       }
       json.forEach((row) => {
-        //console.log(Object.getPrototypeOf(row));
-        //console.log(Object.getOwnPropertySymbols(row));
-        //console.log(Object.getOwnPropertyDescriptors(row));
         const item: any = new Item();
         // Iterate through the row in sorted order for any duplicated fields.
         let keys = Object.keys(row).sort();
         keys.forEach((uniqueKey) => {
           if (row[uniqueKey]) {
-            let key = uniqueKey;
+            let key: any = uniqueKey;
             if (!mapFields.field[uniqueKey]) {
               key = uniqueKey.substring(0, uniqueKey.lastIndexOf(' '));
-              //console.log(`Appending duplicate key ${uniqueKey} to ${key} with not null value`);
+              if (!mapFields.field[key]) {
+                key = null;
+              }
             }
 
-            if (mapFields.convert[key]) {
-              setOrAppend(item, mapFields.field[key], mapFields.convert[key](row[uniqueKey]));
-              //item[mapFields.field[key]] = mapFields.convert[key](row[uniqueKey]);
-            } else if (mapFields.field[key]) {
-              setOrAppend(item, mapFields.field[key], row[uniqueKey]);
-              //item[mapFields.field[key]] = row[uniqueKey];
-            } else {
-              throw new Error(`Unexpected field ${key}!`);
+            if (key) {
+              if (mapFields.convert[key]) {
+                setOrAppend(item, mapFields.field[key], mapFields.convert[key](row[uniqueKey]));
+              } else if (mapFields.field[key]) {
+                setOrAppend(item, mapFields.field[key], row[uniqueKey]);
+              }  
             }
           }
         });
