@@ -31,10 +31,10 @@ if (args.debug) {
 if (args.help || !checkUsage(args)) {
   console.log(`Parse Jira CSV export files and transform to JSON output\n
 Examples:
-  csv2json.exe -d c:\\export\\jira -f "PI_squad2_features.csv" -f "PI_squad2_items.csv"
-  csv2json.exe -d c:\\export\\jira --summary
-  csv2json.exe -d c:\\export\\jira -s --exclude "JIRA-1234" --feat "FEAT-9105"
-
+  csv2json -f "test/sample.csv" -f "test/sample2.csv"
+  csv2json -d test --summary
+  csv2json -d test -s --exclude "JIRA-1234" --feat "FEAT-9105"
+  csv2json -d test --json
 
 Usage:
   -f or --file <CSV file> : specify the path to CSV file (repeat option to specify multiple files)

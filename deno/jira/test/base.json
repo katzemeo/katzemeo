@@ -6,6 +6,12 @@
   "computed_sp": 30,
   "completed": 10,
   "remaining": 31,
+  "members": [
+    {
+      "name": "Mao",
+      "id": "ASSIGNEEID1"
+    }
+  ],
   "items": [
     {
       "jira": "FEAT-0109",

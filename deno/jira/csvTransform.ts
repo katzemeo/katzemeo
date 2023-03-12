@@ -1,10 +1,6 @@
-import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.177.0/path/mod.ts";
-import { parse as parseCSV } from "https://deno.land/std@0.134.0/encoding/csv.ts";
-//import { StringReader } from "https://deno.land/std@0.177.0/io/mod.ts";
-//import { BufReader } from "https://deno.land/std@0.177.0/io/mod.ts";
-import { StringReader } from "https://deno.land/std@0.134.0/io/readers.ts";
-import { BufReader } from "https://deno.land/std@0.134.0/io/bufio.ts";
-//import { parse } from "https://deno.land/std@0.177.0/datetime/parse.ts";
+import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.179.0/path/mod.ts";
+import { parse as parseCSV } from "https://deno.land/std@0.179.0/encoding/csv.ts";
+//import { parse } from "https://deno.land/std@0.179.0/datetime/parse.ts";
 import { datetime } from "https://deno.land/x/ptera/mod.ts";
 
 export function checkFiles(args: any, filePaths: string[]) {
@@ -67,19 +63,45 @@ export function checkFiles(args: any, filePaths: string[]) {
   }
 }
 
-const parseCSVText = async (text: string) => {
-  const bufReader = new BufReader(new StringReader(text));
-  let json: Array<any> = await parseCSV(bufReader, {
-    skipFirstRow: true
+const parseCSVText = async (args: any, text: string, mapFields: any) => {
+  let endIndex = text.indexOf('\r');
+  if (endIndex < 0) {
+    endIndex = text.indexOf('\n');
+  }
+  const headerLine = text.substring(0, endIndex);
+  //console.log(headerLine);
+  let uniqueHeaders: any = headerLine.split(",");
+  let fcount: any = {};
+  for (let i=0; i<uniqueHeaders.length; i++) {
+    const key = uniqueHeaders[i];
+    let f = fcount[key];
+    if (!f) {
+      fcount[key] = 1;
+    } else {
+      fcount[key]++;
+      uniqueHeaders[i] = `${key} ${String(fcount[key]).padStart(3, '0')}`;
+    }
+
+    if (args.debug) {
+      if (!mapFields.field[key]) {
+        console.warn(`Unknown field "${key}"... Ignoring`);
+      }  
+    }
+  }
+
+  // Handle duplicate values by making any duplicate field names unique
+  let json: Array<any> = await parseCSV(text, {
+    skipFirstRow: true,
+    columns: uniqueHeaders
   });
+  //console.log(json);
   return json;
 };
 
-const parseCSVFile = async (csvFile: string) => {
+const parseCSVFile = async (args: any, csvFile: string, mapFields: any) => {
   try {
     const text = await Deno.readTextFile(csvFile);
-    //console.log(text);
-    return await parseCSVText(text);
+    return await parseCSVText(args, text, mapFields);
   } catch (e) {
     if (e instanceof Deno.errors.NotFound) {
       throw new Error("Specified CSV file not found!");
@@ -105,8 +127,13 @@ const FIELD_MAPPINGS = [
       { from: "Pending", to: "PENDING" }, { from: "To Do", to: "READY" }, { from: "In Review", to: "INPROGRESS" },
       { from: "In Progress", to: "INPROGRESS" }, { from: "Done", to: "COMPLETED" } ]
   },
-  { source: `Priority`, dest: `priority`,
-    convert_enum: [ { from: "Critical", to: 1 }, { from: "High", to: 2 }, { from: "Medium", to: 3 }, { from: "Low", to: 4 } ]
+  {
+    source: `Priority`, dest: `priority`,
+      convert_enum: [{ from: "Critical", to: 0 },
+        { from: "Highest", to: 1 },
+        { from: "High", to: 2 },
+        { from: "Medium", to: 3 },
+        { from: "Low", to: 4 }]
   },
   { source: `Custom field (LOB)`, dest: `client` },
   { source: `Assignee`, dest: `assignee` },
@@ -141,13 +168,13 @@ const PARENT_MAPPINGS = [
 ];
 
 function prepareFieldMappings(mappings: any) {
-  const fieldsMap = {};
-  const convertMap = {};
+  const fieldsMap: any = {};
+  const convertMap: any = {};
   const map = { field: fieldsMap, convert: convertMap };
   mappings.forEach((m: any) => {
     fieldsMap[m.source] = m.dest;
     if (m.convert_enum) {
-      convertMap[m.source] = function(v) {
+      convertMap[m.source] = function(v: any) {
         for (let i=0; i<m.convert_enum.length; i++) {
           if (v == m.convert_enum[i].from) {
             return m.convert_enum[i].to;
@@ -156,7 +183,7 @@ function prepareFieldMappings(mappings: any) {
         return v;
       };
     } else if (m.convert_date) {
-      convertMap[m.source] = function(v) {
+      convertMap[m.source] = function(v: any) {
         if (v) {
           //console.log(v);
           //console.log(m.convert_date);
@@ -176,7 +203,7 @@ function prepareFieldMappings(mappings: any) {
         return v;
       };
     } else if (m.convert_number) {
-      convertMap[m.source] = function(v) {
+      convertMap[m.source] = function(v: any) {
         let num = Number(v);
         return Number(num.toFixed(Number(m.convert_number)));
       };
@@ -186,7 +213,7 @@ function prepareFieldMappings(mappings: any) {
 }
 
 function prepareParentMappings(mappings: any) {
-  const map = {};
+  const map: any = {};
 
   // Initialize map hierarchy of all item types and build function to link to parent items
   mappings.forEach((m: any) => {
@@ -214,17 +241,17 @@ function prepareParentMappings(mappings: any) {
 }
 
 class Item extends Object {
-  jira: string;
-  summary: string;
-  type: string;
-  client: string;
-  description: string;
-  status: string;
-  estimate: number;
-  computed_sp: number;
-  completed: number;
-  remaining: number;
-  children: [];
+  jira: string|undefined = undefined;
+  summary: string|undefined = undefined;
+  type: string|undefined = undefined;
+  client: string|undefined = undefined;
+  description: string|undefined = undefined;
+  status: string|undefined = undefined;
+  estimate: number|undefined = undefined;
+  computed_sp: number|undefined = undefined;
+  completed: number|undefined = undefined;
+  remaining: number|undefined = undefined;
+  children: any = undefined;
 
   constructor(obj: any = null) {
     super();
@@ -235,7 +262,7 @@ class Item extends Object {
   }
 
   toString(): string {
-    if (this.children) {
+    if (this.children /* && this.children.length > 0*/) {
       let str = fmtItemSummary(this, this.type === "FEAT" ? "" : "# ");
       this.children.forEach((child: any) => {
         str += "\n  ";
@@ -286,7 +313,7 @@ function computeTotalSP(item: any, sortChildren = true): number {
     if (Object.keys(diffs).length > 0) {
       let changes: any = { diffs: [], summary: item.summary };
       Object.entries(diffs).forEach(([k, v]) => {
-        let c = {};
+        let c: any = {};
         c[k] = `${baseItem[k]} -> ${v}`;
         changes.diffs.push(c);
       });
@@ -360,8 +387,24 @@ function jsonReplacer(key: string, value: any) {
   return value;
 }
 
+function setOrAppend(target: any, key: string, value: any) {
+  let existingValue = target[key];
+  if (existingValue) {
+    let arr: any;
+    if (Array.isArray(existingValue)) {
+      arr = existingValue;
+    } else {
+      arr = [ existingValue ];
+    }
+    arr.push(value);
+    target[key] = arr;
+  } else {
+    target[key] = value;
+  }
+}
+
 export async function transformFiles(args: any, files: string[], output: any, fieldMappings: any = FIELD_MAPPINGS, parentMappings: any = PARENT_MAPPINGS) {
-  let teamKeys = ["computed_sp", "completed", "remaining"];
+  let teamKeys = ["name", "squad", "sp_per_day_rate", "capacity", "computed_sp", "completed", "remaining", "members"];
   if (args.base) {
     const text = await Deno.readTextFile(args.base);
     const json = JSON.parse(text);
@@ -380,22 +423,36 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   for (let i = 0; i < files.length; i++) {
     try {
       const filename = basename(files[i]);
-      const json = await parseCSVFile(files[i]);
+      const json = await parseCSVFile(args, files[i], mapFields);
       if (args.debug) {
         console.debug(`File: "${filename}"`);
       }
       json.forEach((row) => {
-        //console.debug(row);
-        const item: Item = new Item();
-        for (const key in row) {
-          if (row[key]) {
+        //console.log(Object.getPrototypeOf(row));
+        //console.log(Object.getOwnPropertySymbols(row));
+        //console.log(Object.getOwnPropertyDescriptors(row));
+        const item: any = new Item();
+        // Iterate through the row in sorted order for any duplicated fields.
+        let keys = Object.keys(row).sort();
+        keys.forEach((uniqueKey) => {
+          if (row[uniqueKey]) {
+            let key = uniqueKey;
+            if (!mapFields.field[uniqueKey]) {
+              key = uniqueKey.substring(0, uniqueKey.lastIndexOf(' '));
+              //console.log(`Appending duplicate key ${uniqueKey} to ${key} with not null value`);
+            }
+
             if (mapFields.convert[key]) {
-              item[mapFields.field[key]] = mapFields.convert[key](row[key]);
+              setOrAppend(item, mapFields.field[key], mapFields.convert[key](row[uniqueKey]));
+              //item[mapFields.field[key]] = mapFields.convert[key](row[uniqueKey]);
             } else if (mapFields.field[key]) {
-              item[mapFields.field[key]] = row[key];
+              setOrAppend(item, mapFields.field[key], row[uniqueKey]);
+              //item[mapFields.field[key]] = row[uniqueKey];
+            } else {
+              throw new Error(`Unexpected field ${key}!`);
             }
           }
-        }
+        });
         //console.debug(item);
 
         if (mapItems[item.type]) {
@@ -427,11 +484,11 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   //console.log(mapItems);
 
   // Third pass: perform DFS of all features to compute total SP based on Epic/Story breakdown
-  mapItems["FEAT"].items.forEach((feat) => {
+  mapItems["FEAT"].items.forEach((feat: any) => {
     computeTotalSP(feat);
   });
 
-  if (args.debug) {
+  if (args.debug && args.base) {
     console.log(base);
   }
 
@@ -463,7 +520,7 @@ export async function transformFiles(args: any, files: string[], output: any, fi
                 changes = { diffs: [], summary: feat.summary };
                 base.updated[feat.jira] = changes;
               }
-              let c = {};
+              let c: any = {};
               c[k] = `${baseItem[k]} -> ${feat[k]}`;
               changes.diffs.push(c);
             }  
@@ -483,12 +540,12 @@ export async function transformFiles(args: any, files: string[], output: any, fi
       remaining_sp += feat.remaining;
 
       if (feat.children) {
-        feat.children.forEach((epic) => {
+        feat.children.forEach((epic: any) => {
           if (args.summary) {
             printItemSummary(epic, "  # ");
           }
           if (epic.children) {
-            epic.children.forEach((item) => {
+            epic.children.forEach((item: any) => {
               if (args.summary) {
                 printItemSummary(item, "    + ");
               }
@@ -500,7 +557,16 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   });
 
   if (feats.length > 0) {
-    const team: any = { name: "PI TEAM", squad: "My Squad", sp_per_day_rate: 0.8, capacity: 5*8, computed_sp: computed_sp, completed: completed_sp, remaining: remaining_sp, items: feats };
+    const team: any = {
+      name: base["name"] ?? "PI TEAM",
+      squad: base["squad"] ?? "My Squad",
+      sp_per_day_rate: base["sp_per_day_rate"] ?? 0.8,
+      capacity: base["capacity"] ?? 5 * 8,
+      computed_sp: computed_sp, completed: completed_sp, remaining: remaining_sp,
+      members: base["members"] ?? [],
+      items: feats
+    };
+
     if (args.json) {
       console.log(JSON.stringify(team, jsonReplacer, 2));
     } else if (args.diff) {

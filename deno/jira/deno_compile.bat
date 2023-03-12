@@ -1,3 +1,3 @@
 @echo off
 
-deno compile --allow-read csvCLI.ts
+deno compile -o csv2json --allow-read csvCLI.ts
