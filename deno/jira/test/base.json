@@ -99,6 +99,7 @@
       "theme": "My Feature Theme 1 for FEAT-0109"
     },
     {
+      "index": 1,
       "jira": "FEAT-9105",
       "summary": "Feature summary for FEAT-9105",
       "type": "FEAT",
@@ -119,6 +120,7 @@
       "theme": "My Feature Theme 2 for FEAT-9105"
     },
     {
+      "index": 999,
       "jira": "FEAT-6666",
       "summary": "Feature summary for FEAT-6666 (Remove me!)",
       "type": "FEAT",

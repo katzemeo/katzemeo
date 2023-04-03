@@ -111,8 +111,6 @@ const parseCSVFile = async (args: any, csvFile: string, mapFields: any) => {
   }
 };
 
-var base: any = { added: {}, updated: {}, unchanged: {}, removed: {}, map: {} };
-
 // Information to map fields and convert value types as needed
 const DATE_TIME_FMT = "d-MMM-YYYY h:mm a";
 const FIELD_MAPPINGS = [
@@ -167,6 +165,45 @@ const PARENT_MAPPINGS = [
   { type: `STORY`, parent_link: `Custom Field (Epic Link)`, parent_type: `EPIC`, has_children: false },
   { type: `SPIKE`, parent_link: `Custom Field (Epic Link)`, parent_type: `EPIC`, has_children: false }
 ];
+
+class Item extends Object {
+  jira: string|undefined = undefined;
+  summary: string|undefined = undefined;
+  type: string|undefined = undefined;
+  client: string|undefined = undefined;
+  description: string|undefined = undefined;
+  status: string|undefined = undefined;
+  estimate: number|undefined = undefined;
+  computed_sp: number|undefined = undefined;
+  completed: number|undefined = undefined;
+  remaining: number|undefined = undefined;
+  children: any = undefined;
+
+  constructor(obj: any = null) {
+    super();
+    if (obj) {
+      Object.assign(this, obj);
+      Object.setPrototypeOf(this, Item.prototype);
+    }
+  }
+
+  toString(): string {
+    if (this.children /* && this.children.length > 0*/) {
+      let str = fmtItemSummary(this, this.type === "FEAT" ? "" : "# ");
+      this.children.forEach((child: any) => {
+        str += "\n  ";
+        str += child;
+      });
+      return str;
+    }
+    return fmtItemDetails(this, "    ");
+  }
+}
+
+var base: any = { added: {}, updated: {}, unchanged: {}, removed: {}, map: {} };
+var UNPLANNED_EPIC: Item = new Item({ type: "EPIC", jira: "UNPLANNED_EPIC", status: "N/A",summary: "Unplanned Epic - Bucket", children: []});
+var UNPLANNED_FEAT: Item = new Item({ type: "FEAT", jira: "UNPLANNED_FEAT", status: "N/A", theme: "Unplanned", summary: "Unplanned Feature - Bucket", children: []});
+UNPLANNED_FEAT.children.push(UNPLANNED_EPIC);
 
 function prepareFieldMappings(mappings: any) {
   const fieldsMap: any = {};
@@ -229,50 +266,24 @@ function prepareParentMappings(mappings: any) {
             }
             parentItem.children.push(item);
           } else {
-            console.warn(`Warning: for ${item.jira}, ${item.parent_jira} not found or should not have any children!`);
+            console.warn(`Warning: Ignoring ${item.jira}. Parent ${item.parent_jira} not found or should not have any children!`);
           }      
         }
       } else if (item.type !== "FEAT") {
-        console.warn(`Warning: Item ${item.jira} does not specify a parent FEAT or EPIC!`);
+        if (UNPLANNED_FEAT) {
+          if (item.type === "EPIC") {
+            UNPLANNED_FEAT.children.push(item);
+          } else {
+            UNPLANNED_EPIC.children.push(item);
+          }
+        } else {
+          console.warn(`Warning: Item ${item.jira} does not specify a parent FEAT or EPIC!`);
+        }
       }
     }};
   });
 
   return map;
-}
-
-class Item extends Object {
-  jira: string|undefined = undefined;
-  summary: string|undefined = undefined;
-  type: string|undefined = undefined;
-  client: string|undefined = undefined;
-  description: string|undefined = undefined;
-  status: string|undefined = undefined;
-  estimate: number|undefined = undefined;
-  computed_sp: number|undefined = undefined;
-  completed: number|undefined = undefined;
-  remaining: number|undefined = undefined;
-  children: any = undefined;
-
-  constructor(obj: any = null) {
-    super();
-    if (obj) {
-      Object.assign(this, obj);
-      Object.setPrototypeOf(this, Item.prototype);
-    }
-  }
-
-  toString(): string {
-    if (this.children /* && this.children.length > 0*/) {
-      let str = fmtItemSummary(this, this.type === "FEAT" ? "" : "# ");
-      this.children.forEach((child: any) => {
-        str += "\n  ";
-        str += child;
-      });
-      return str;
-    }
-    return fmtItemDetails(this, "    ");
-  }
 }
 
 function fmtItemSummary(item: any, prefix = ""): string {
@@ -361,7 +372,7 @@ function computeTotalSP(item: any, sortChildren = true): number {
 
   const sp = item.estimate ?? 0;
   if (item.status === "COMPLETED") {
-    console.warn(`computeTotalSP() - ${item.jira} is already COMPLETED!`);
+    //console.warn(`computeTotalSP() - ${item.jira} is already COMPLETED!`);
     item.completed = sp;
     item.remaining = 0;
   } else {
@@ -483,6 +494,10 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   });
   //console.log(mapItems);
 
+  if (UNPLANNED_FEAT && (UNPLANNED_FEAT.children.length > 1 || UNPLANNED_EPIC.children.length > 0)) {
+    mapItems["FEAT"].items.push(UNPLANNED_FEAT);
+  }
+
   // Third pass: perform DFS of all features to compute total SP based on Epic/Story breakdown
   mapItems["FEAT"].items.forEach((feat: any) => {
     computeTotalSP(feat);
@@ -562,6 +577,7 @@ export async function transformFiles(args: any, files: string[], output: any, fi
       squad: base["squad"] ?? "My Squad",
       sp_per_day_rate: base["sp_per_day_rate"] ?? 0.8,
       capacity: base["capacity"] ?? 5 * 8,
+      date: base["date"] ?? new Date(),
       computed_sp: computed_sp, completed: completed_sp, remaining: remaining_sp,
       members: base["members"] ?? [],
       items: feats
