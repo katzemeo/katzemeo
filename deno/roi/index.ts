@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { open } from "https://deno.land/x/open/index.ts";
 import { getCashCount } from "./cash_count.ts";
 import { getCashFlow } from "./cash_flow.ts";
@@ -127,7 +127,7 @@ const html = `
             <button class="btn btn-primary" type="button" onclick="calculateCashCount()">Calculate!</button>
             <button class="btn btn-primary" type="button" onclick="copyData(exportCashCount)"><i class="fas fa-copy"></i></button>
           </div>
-          <button class="btn btn-primary" type="button" onclick="shareURL('cashcount', 'ROI - Cash Count')"><i class="fas fa-share"></i></button>
+          <button class="btn btn-primary" type="button" onclick="shareURL('cashcount', 'ROI - Cash Count')" title="Share Cash Count"><i class="fas fa-share"></i></button>
         </div>
         <br/>
         <p id="cashcount_subtotals_group">
@@ -169,7 +169,7 @@ const html = `
             <button class="btn btn-primary" type="button" onclick="calculateIncome()">Calculate!</button>
             <button class="btn btn-primary" type="button" onclick="copyData(exportIncome)"><i class="fas fa-copy"></i></button>
           </div>
-          <button class="btn btn-primary" type="button" onclick="shareURL('income', 'ROI - Income')"><i class="fas fa-share"></i></button>
+          <button class="btn btn-primary" type="button" onclick="shareURL('income', 'ROI - Income')" title="Share Income"><i class="fas fa-share"></i></button>
         </div>
         <p>
           <div class="row align-items-center">
@@ -234,7 +234,7 @@ const html = `
             <button class="btn btn-primary" type="button" onclick="calculateROI()">Calculate!</button>
             <button class="btn btn-primary" type="button" onclick="copyData(exportROI)"><i class="fas fa-copy"></i></button>
           </div>
-          <button class="btn btn-primary" type="button" onclick="shareURL('cagr', 'ROI - CAGR')"><i class="fas fa-share"></i></button>
+          <button class="btn btn-primary" type="button" onclick="shareURL('cagr', 'ROI - CAGR')" title="Share CAGR"><i class="fas fa-share"></i></button>
         </div>
         <br/>
         <p>
@@ -300,7 +300,7 @@ const html = `
             <button class="btn btn-primary" type="button" onclick="calculateCashFlow()">Calculate!</button>
             <button class="btn btn-primary" type="button" onclick="copyData(exportCashFlow)"><i class="fas fa-copy"></i></button>
           </div>
-          <button class="btn btn-primary" type="button" onclick="shareURL('cashflow', 'ROI - Cash Flow')"><i class="fas fa-share"></i></button>
+          <button class="btn btn-primary" type="button" onclick="shareURL('cashflow', 'ROI - Cash Flow')" title="Share Cash Flow"><i class="fas fa-share"></i></button>
         </div>
         <p>
           <div class="row align-items-end">
@@ -393,7 +393,7 @@ const html = `
             <button class="btn btn-primary" type="button" onclick="calculateNPV()">Calculate!</button>
             <button class="btn btn-primary" type="button" onclick="copyData(exportNPV)"><i class="fas fa-copy"></i></button>
           </div>
-          <button class="btn btn-primary" type="button" onclick="shareURL('npv', 'ROI - NPV')"><i class="fas fa-share"></i></button>
+          <button class="btn btn-primary" type="button" onclick="shareURL('npv', 'ROI - NPV')" title="Share NPV"><i class="fas fa-share"></i></button>
         </div>
         <br/>
         <p>

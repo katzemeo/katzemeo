@@ -88,7 +88,7 @@ const html = `
           <div>
             <button class="btn btn-primary me-1" type="button" onclick="clearAllValues()" title="Clear All Values"><i class="fa-solid fa-rotate"></i></button>
             <button class="btn btn-primary me-1" type="button" onclick="deleteLocalStorage()" title="Delete Local Storage"><i class="fa-solid fa-trash"></i></button>
-            <button class="btn btn-primary me-1" type="button" onclick="shareURL('home', 'Home') title="Share Link"><i class="fas fa-share"></i></button>
+            <button class="btn btn-primary me-1" type="button" onclick="shareURL('home', 'Home')" title="Share Link"><i class="fas fa-share"></i></button>
           </div>
         </div>
         <p>
@@ -1233,6 +1233,7 @@ const html = `
     }
 
     function shareURL(path, title) {
+      //console.log("shareURL() - path="+path +", title="+ title);
       if (navigator.share) {
         const url = window.location.origin +"/"+ path + window.location.search;
         navigator.share({
