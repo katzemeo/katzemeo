@@ -43,8 +43,8 @@ const EXPENSE_TEMPLATE_STUDENT = {
     //{ household: "Household expenses (maint., furniture, etc.)", freq: {every: 1, period: "year"}, value: 1000, step: 100 },
     { computer_related: "Computer equipment and office supplies", freq: {every: 1, period: "year"}, value: 0, step: 100 },
     //{ pets_related: "Pets", freq: {every: 1, period: "week"}, value: 0, step: 10 },
-    { clothing_footwear: "Clothing and footwear", freq: {every: 1, period: "month"}, value: 50, step: 20 },
-    { personal_care: "Personal care (toiletries, hair care, makeup, laundry)", freq: {every: 1, period: "week"}, value: 10 },
+    { clothing_footwear: "Clothing and footwear", freq: {every: 1, period: "month"}, value: 0, step: 20 },
+    { personal_care: "Personal care (toiletries, hair care, makeup, laundry)", freq: {every: 1, period: "week"}, value: 0 },
   ],
   fixed: [
     { rent_or_mortgage: "Rent or mortgage payment", freq: {every: 1, period: "month"}, value: 3400/2, step: 100 },
@@ -61,13 +61,13 @@ const EXPENSE_TEMPLATE_STUDENT = {
   intermittent: [
     //{ car_related: "Car repairs, gas, etc.", freq: {every: 1, period: "year"}, value: 2500, step: 250 },
     //{ health_care: "Health care (dental, medication, glasses/lenses)", freq: {every: 1, period: "month"}, step: 100 },
-    { education: "Education (tuition, books, fees, etc.)", freq: {every: 1, period: "year"}, value: 6100*2, step: 500 },
+    { education: "Education (tuition, books, fees, etc.)", freq: {every: 1, period: "year"}, value: 6100, step: 500 },
   ],
   discretionary: [
-    { eating_out: "Eating out", freq: {every: 1, period: "month"}, value: 100, step: 50 },
+    { eating_out: "Eating out", freq: {every: 1, period: "month"}, value: 0, step: 50 },
     { recreation: "Recreation", freq: {every: 1, period: "month"}, value: 0, step: 25 },
     //{ travel: "Travel", freq: {every: 1, period: "year"}, value: 0, step: 500 },
-    { gifts_donations: "Gifts and charitable donations", freq: {every: 1, period: "year"}, value: 1000, step: 200 },
+    //{ gifts_donations: "Gifts and charitable donations", freq: {every: 1, period: "year"}, value: 1000, step: 200 },
   ],
 };
 
