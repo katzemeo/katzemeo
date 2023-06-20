@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { open } from "https://deno.land/x/open/index.ts";
 import { getExpenseTemplate } from "./expense_template.ts";
 
@@ -190,7 +190,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.6 - &copy; 2022-12-26</div>
+    <div class="text-center text-muted fs-6">v0.7 - &copy; 2023-06-20</div>
   </footer>
 
   <!-- Modal: Add Entry -->
@@ -1378,6 +1378,7 @@ async function handleRequest(request: Request): Promise<Response> {
 const port = Number(Deno.env.get("PORT") ?? 7777);
 console.log(`Listening on http://localhost:${port}`);
 if (port == 7777) {
-  open(`http://localhost:${port}`);
+  const profile = Deno.env.get("PROFILE") ?? "default";
+  open(`http://localhost:${port}?profile=${profile}`);
 }
 await serve(handleRequest, { port });
