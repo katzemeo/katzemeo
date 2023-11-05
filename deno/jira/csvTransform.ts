@@ -1,6 +1,6 @@
-import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.179.0/path/mod.ts";
-import { parse as parseCSV } from "https://deno.land/std@0.179.0/encoding/csv.ts";
-//import { parse } from "https://deno.land/std@0.179.0/datetime/parse.ts";
+import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.205.0/path/mod.ts";
+//import { parse as parseCSV } from "https://deno.land/std@0.179.0/encoding/csv.ts";
+import { parse as parseCSV } from "https://deno.land/std@0.205.0/csv/mod.ts";
 import { datetime } from "https://deno.land/x/ptera/mod.ts";
 
 export function checkFiles(args: any, filePaths: string[]) {
@@ -70,7 +70,8 @@ const parseCSVText = async (args: any, text: string, mapFields: any) => {
   }
   const headerLine = text.substring(0, endIndex);
   //console.log(headerLine);
-  let uniqueHeaders: any = headerLine.split(",");
+  //let uniqueHeaders: any = headerLine.split(",");
+  let uniqueHeaders: any = headerLine.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
   let fcount: any = {};
   for (let i=0; i<uniqueHeaders.length; i++) {
     const key = uniqueHeaders[i];
@@ -114,17 +115,19 @@ const parseCSVFile = async (args: any, csvFile: string, mapFields: any) => {
 // Information to map fields and convert value types as needed
 const DATE_TIME_FMT = "d-MMM-YYYY h:mm a";
 const FIELD_MAPPINGS = [
+  { source: `Labels`, dest: `labels` },
   { source: `Theme`, dest: `theme` },
   { source: `Summary`, dest: `summary` },
   { source: `Issue key`, dest: `jira` },
   { source: `Issue Type`, dest: `type`,
-    convert_enum: [ { from: "Feature", to: "FEAT" }, { from: "Epic", to: "EPIC" }, { from: "Story", to: "STORY" },
-      { from: "Spike", to: "SPIKE" } ]
+    convert_enum: [ { from: "Theme", to: "THEME" }, { from: "Initiative", to: "INIT" }, { from: "Feature", to: "FEAT" },
+      { from: "Epic", to: "EPIC" }, { from: "Story", to: "STORY" }, { from: "Spike", to: "SPIKE" } ]
   },
   { source: `Status`, dest: `status`,
     convert_enum: [ { from: "Backlog", to: "BACKLOG" }, { from: "Feature Ready", to: "READY" }, { from: "Blocked", to: "BLOCKED" },
       { from: "Pending", to: "PENDING" }, { from: "To Do", to: "READY" }, { from: "In Review", to: "INPROGRESS" },
-      { from: "In Progress", to: "INPROGRESS" }, { from: "Done", to: "COMPLETED" } ]
+      { from: "In Progress", to: "INPROGRESS" }, { from: "Done", to: "COMPLETED" },
+      { from: "Review and Sign-Off", to: "COMPLETED" }, { from: "Prioritized", to: "READY" }, { from: "Cancelled", to: "CANCELLED" } ]
   },
   {
     source: `Priority`, dest: `priority`,
@@ -160,8 +163,11 @@ const FIELD_MAPPINGS = [
 
 // Information to link child items to parent (if any)
 const PARENT_MAPPINGS = [
-  { type: `FEAT`, parent_link: `Custom Field (Parent Link)`, parent_type: `INIT`, has_children: true },
+  { type: `THEME`, parent_link: `Custom Field (Parent Link)`, parent_type: `NONE`, has_children: true },
+  { type: `FEAT`, parent_link: `Custom Field (Parent Link)`, parent_type: `THEME`, has_children: true },
+  { type: `INIT`, parent_link: `Custom Field (Parent Link)`, parent_type: `THEME`, has_children: true },  
   { type: `EPIC`, parent_link: `Custom Field (Parent Link)`, parent_type: `FEAT`, has_children: true },
+  //{ type: `EPIC`, parent_link: `Custom Field (Parent Link)`, parent_type: `INIT`, has_children: true },
   { type: `STORY`, parent_link: `Custom Field (Epic Link)`, parent_type: `EPIC`, has_children: false },
   { type: `SPIKE`, parent_link: `Custom Field (Epic Link)`, parent_type: `EPIC`, has_children: false }
 ];
@@ -265,11 +271,15 @@ function prepareParentMappings(mappings: any) {
               parentItem.children = [];
             }
             parentItem.children.push(item);
+
+            if (parentItem.type === "THEME" && !item.theme) {
+              item.theme = parentItem.summary;
+            }
           } else {
             console.warn(`Warning: Ignoring ${item.jira}. Parent ${item.parent_jira} not found or should not have any children!`);
-          }      
+          }
         }
-      } else if (item.type !== "FEAT") {
+      } else if (item.type !== "THEME" && item.type !== "FEAT" && item.type !== "INIT") {
         if (UNPLANNED_FEAT) {
           if (item.type === "EPIC") {
             UNPLANNED_FEAT.children.push(item);
@@ -469,12 +479,14 @@ export async function transformFiles(args: any, files: string[], output: any, fi
         if (mapItems[item.type]) {
           mapItems[item.type].lookupByJira[item.jira] = item;
           mapItems[item.type].items.push(item);
+        } else {
+          console.warn(`Unknown item type "${item.type}"`);
         }
       });
       //console.log(mapItems);
 
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       console.error(`Error processing CSV file "${files[i]}".`);
       if (args.debug) {
         console.error(err);
@@ -494,12 +506,46 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   });
   //console.log(mapItems);
 
+  // Default theme attribute from any label(s)
+  mapItems["FEAT"].items.forEach((feat: any) => {
+    if (!feat.theme && feat.labels) {
+      feat.theme = "";
+      feat.labels.forEach((label: any) => {
+        if (label.startsWith("theme_")) {
+          if (feat.theme) {
+            feat.theme += ", ";
+          }
+          feat.theme += label.substring(6).toUpperCase();
+        }
+      });
+    }
+  });
+
   if (UNPLANNED_FEAT && (UNPLANNED_FEAT.children.length > 1 || UNPLANNED_EPIC.children.length > 0)) {
     mapItems["FEAT"].items.push(UNPLANNED_FEAT);
   }
 
+  // Sort features/initiatives and filter as appropriate
+  mapItems["FEAT"].items.sort(function(a: any, b:any): number {
+    let result = compare(a, b, "theme");
+    if (result === 0) {
+      result = compare(a, b, "summary");
+    }
+    return result;
+  });
+  mapItems["INIT"].items.sort(function(a: any, b:any): number {
+    let result = compare(a, b, "theme");
+    if (result === 0) {
+      result = compare(a, b, "summary");
+    }
+    return result;
+  });
+  
+  let allFeats: any = mapItems["FEAT"].items.concat(mapItems["INIT"].items);
+  //console.log(allFeats);
+
   // Third pass: perform DFS of all features to compute total SP based on Epic/Story breakdown
-  mapItems["FEAT"].items.forEach((feat: any) => {
+  allFeats.forEach((feat: any) => {
     computeTotalSP(feat);
   });
 
@@ -511,15 +557,9 @@ export async function transformFiles(args: any, files: string[], output: any, fi
   let computed_sp = 0;
   let completed_sp = 0;
   let remaining_sp = 0;
+    
   let feats: any = [];
-  mapItems["FEAT"].items.sort(function(a: any, b:any): number {
-    let result = compare(a, b, "theme");
-    if (result === 0) {
-      result = compare(a, b, "summary");
-    }
-    return result;
-  });
-  mapItems["FEAT"].items.forEach((feat: any) => {
+  allFeats.forEach((feat: any) => {
     if ((!args.assignee || feat.assignee == args.assignee) &&
         (!args.feat || args.feat.indexOf(feat.jira) >= 0) &&
         (!args.exclude || args.exclude.indexOf(feat.jira) < 0)) {
@@ -625,7 +665,7 @@ export async function transformFiles(args: any, files: string[], output: any, fi
       console.log("*".repeat(150));
     }
   } else {
-    console.warn(`Warning: no matching features found!`);
+    console.warn(`Warning: no matching features or initiatives found!`);
   }
 
   if (args.debug) {
