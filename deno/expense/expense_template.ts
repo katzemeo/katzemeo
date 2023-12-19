@@ -47,8 +47,9 @@ const EXPENSE_TEMPLATE_STUDENT = {
     { personal_care: "Personal care (toiletries, hair care, makeup, laundry)", freq: {every: 1, period: "week"}, value: 0 },
   ],
   fixed: [
-    { rent_or_mortgage: "Rent or mortgage payment", freq: {every: 1, period: "month"}, value: 3400/2, step: 100 },
+    { rent_or_mortgage: "Rent or mortgage payment", freq: {every: 1, period: "month"}, value: 2450/2, step: 100 },
     //{ property_tax_or_condo_fee: "Property taxes and/or condo fees", freq: {every: 4, period: "month"}, value: 4000/4, step: 100 },
+    { rental_insurance: "Rental insurance", freq: {every: 1, period: "year"}, value: 312/2, step: 100 },
     //{ home_insurance: "Home insurance", freq: {every: 1, period: "month"}, value: 100, step: 10 },
     { communications: "Communications (telephone, internet, cable)", freq: {every: 1, period: "month"}, value: 150/2 },
     { transportation: "Transit, Car, or Travel related", freq: {every: 1, period: "month"}, value: 100 },
@@ -61,7 +62,7 @@ const EXPENSE_TEMPLATE_STUDENT = {
   intermittent: [
     //{ car_related: "Car repairs, gas, etc.", freq: {every: 1, period: "year"}, value: 2500, step: 250 },
     //{ health_care: "Health care (dental, medication, glasses/lenses)", freq: {every: 1, period: "month"}, step: 100 },
-    { education: "Education (tuition, books, fees, etc.)", freq: {every: 1, period: "year"}, value: 6100, step: 500 },
+    { education: "Education (tuition, books, fees, etc.)", freq: {every: 1, period: "year"}, value: 6100+1000+(1042.31*2), step: 500 },
   ],
   discretionary: [
     { eating_out: "Eating out", freq: {every: 1, period: "month"}, value: 0, step: 50 },
