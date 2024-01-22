@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.192.0/http/server.ts";
 import { open } from "https://deno.land/x/open/index.ts";
 import { getExpenseTemplate } from "./expense_template.ts";
+import { computeCashFlow } from "./expense_cashflow.ts";
 
 const html = `
 <!DOCTYPE html>
@@ -86,6 +87,7 @@ const html = `
             </p>
           </div>
           <div>
+            <button id="compute_cash_flow" disabled="disabled" class="btn btn-primary me-1" type="button" onclick="computeCashFlow()" title="Compute Cash Flow">🌴</button>
             <button class="btn btn-primary me-1" type="button" onclick="clearAllValues()" title="Clear All Values"><i class="fa-solid fa-rotate"></i></button>
             <button class="btn btn-primary me-1" type="button" onclick="deleteLocalStorage()" title="Delete Local Storage"><i class="fa-solid fa-trash"></i></button>
             <button class="btn btn-primary me-1" type="button" onclick="shareURL('home', 'Home')" title="Share Link"><i class="fas fa-share"></i></button>
@@ -190,7 +192,7 @@ const html = `
     </div>
   </div>
   <footer>
-    <div class="text-center text-muted fs-6">v0.7 - &copy; 2023-06-20</div>
+    <div class="text-center text-muted fs-6">v0.8 - &copy; 2024-01-20</div>
   </footer>
 
   <!-- Modal: Add Entry -->
@@ -950,6 +952,9 @@ const html = `
       groups.forEach((group) => {
         buildGroupExpenseUI(group);
       });
+
+      const computeCashFlowEl = document.getElementById("compute_cash_flow");
+      computeCashFlowEl.disabled = false;
     };
 
     const sortEntries = (group) => {
@@ -1078,6 +1083,8 @@ const html = `
             _expense_template = data;
             buildExpenseUI();
             calculateTotal(_totals);
+          }).catch((err) => {
+            console.log(err);
           });
         } else {
           showError("Unable to lookup Expense template.");
@@ -1086,6 +1093,42 @@ const html = `
       }).catch((error) => {
         console.error(error);
         window.alert("Unable to get Expense template.  Please try again.");
+      });
+    };
+
+    const postExpenseCashFlow = () => {
+      if (!_expense_template) {
+        return;
+      }
+      const params = new URLSearchParams();
+      if (_guid) {
+        params.set("guid", _guid);
+      }
+      params.set("profile", _profile ?? "template");
+      let url = "/cashflow" + "?" + params.toString();
+      fetch(url, {
+        method: "POST",
+        headers: JSON_HEADERS,
+        body: JSON.stringify(_expense_template)
+      }).then((res) => {
+        if (res.status == 200) {
+          res.json().then((data) => {
+            if (data.status !== "OK") {
+              showError("Unable to compute cash flow ("+ data.result +")");
+            } else {
+              console.log(data);
+            }
+          }).catch((err) => {
+            console.log(err);
+            showError("Unexpected error!  Unable to compute cash flow");
+          });
+        } else {
+          showError("Unable to compute cash flow");
+          console.log("Unexpected response", res.status);
+        }
+      }).catch((error) => {
+        console.error(error);
+        window.alert("Unable to compute cash flow.  Please try again.");
       });
     };
 
@@ -1182,14 +1225,22 @@ const html = `
       }
     };
 
+    const computeCashFlow = () => {
+      showInfo("Computing cash flow...");
+      postExpenseCashFlow();
+    };
+
     window.onload = function () {
       const url = new URL(window.location.href);
       _guid = url.searchParams.get("guid");
       _profile = url.searchParams.get("profile");
       if (!restoreFromStorage()) {
         showInfo("Today is "+ formatDate(new Date()));
+        if (!_expense_template) {
+          getExpenseTemplate();
+        }
       }
-      configureTabs();
+      //configureTabs();
       configureAutomaticSave();
 
       let tab = url.searchParams.get("tab");
@@ -1361,10 +1412,13 @@ async function handleRequest(request: Request): Promise<Response> {
   const guid: any = url.searchParams.get("guid");
   const profile: any = url.searchParams.get("profile");
   try {
-    if (pathname == "/ping") {
+    if (pathname === "/ping") {
       return new Response(`OK`);
-    } else if (pathname == "/expense") {
+    } else if (pathname === "/expense") {
       return new Response(JSON.stringify(await getExpenseTemplate(guid, profile)), { headers: { 'Content-Type': 'application/json' } });
+    } else if (pathname === "/cashflow") {
+      const expenses = await request.json();
+      return new Response(JSON.stringify(await computeCashFlow(expenses, guid, profile)), { headers: { 'Content-Type': 'application/json' } });
     }
     return new Response(html, { headers: { 'Content-Type': 'text/html' } });
   } catch (error) {
