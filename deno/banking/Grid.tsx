@@ -1,4 +1,4 @@
-import { Component, h } from "https://deno.land/x/nano_jsx@v0.0.30/mod.ts";
+import { Component, h } from "https://deno.land/x/nano_jsx@v0.1.0/mod.ts";
 
 const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency" }).format;
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "America/Toronto";

@@ -83,6 +83,10 @@ export const getCashFlow = async (guid: any = null, profile: string = "default")
     template = profile == "single" ? CASH_FLOW_SINGLE : CASH_FLOW_DEFAULT;
   }
 
+  if (!template) {
+    throw new Error(`CashFlow profile "${profile}" not found!`);
+  }
+
   return {
     income_sources: template.income.map((e: any) => ({
       name: getName(e),

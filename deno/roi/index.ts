@@ -413,7 +413,7 @@ const html = `
       "Content-Type": "application/json",
     };
     const NOW = new Date();
-    const _percentFormat = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFactionDigits: 2 }).format;
+    const _percentFormat = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format;
     const PCT = function (value) { if (!isNaN(value)) { return _percentFormat(value); } return ""; };
     const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency", currencyDisplay: "symbol", currencySign: "accounting" }).format;
     const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "America/Toronto";

@@ -20,6 +20,9 @@ function doPost(headers: any, url: any, data: object) {
 export const computeCashFlow = async (expenses: any, guid: any = null, profile: string = "default") => {
   const data: any = { status: "ERROR" };
   const urlPath = Deno.env.get("API_URL");
+  if (!urlPath) {
+    return data;
+  }
 
   const url = new URL(urlPath);
   if (guid || profile) {

@@ -1,6 +1,6 @@
 import { parse as parseArgs } from "https://deno.land/std@0.128.0/flags/mod.ts"
 import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
-import { h, renderSSR, Helmet } from "https://deno.land/x/nano_jsx@v0.0.30/mod.ts";
+import { h, renderSSR, Helmet } from "https://deno.land/x/nano_jsx@v0.1.0/mod.ts";
 import { open } from "https://deno.land/x/open/index.ts";
 import { Grid } from "./Grid.tsx";
 import { parseDate, checkFiles, categorizeFiles } from "./csvCategorize.ts"
