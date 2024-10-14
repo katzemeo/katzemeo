@@ -47,22 +47,36 @@ const html = `
   </body>
 </html>`
 
+// TODO - rewrite to use more efficicient byobRequest for byte streams
+// https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_byte_streams
 async function createReadableStream(fileName) {
+  console.log(`createReadableStream("${fileName}")...`);
   const body = new ReadableStream({
-    type: "bytes",
+    //type: "bytes",
     async start(controller) {
+      let numberOfBytesRead = 0;
       const file = await Deno.open(fileName, {read: true});
-      let readBlockSize=100000;
+      const readBlockSize=100000;
       while (true) {
+        await Deno.seek(file.rid, numberOfBytesRead, Deno.SeekMode.Current)
         const buf = new Uint8Array(readBlockSize);
-        await Deno.seek(file.rid, readBlockSize, Deno.SeekMode.Current)
-        const numberOfBytesRead = await Deno.read(file.rid, buf);
+        numberOfBytesRead = await Deno.read(file.rid, buf);
         if (!numberOfBytesRead) {
+          console.log(`createReadableStream("${fileName}") EOF!`);
           controller.close();
           break;
         }
-        controller.enqueue(buf);
+        console.log(`createReadableStream("${fileName}") - read ${numberOfBytesRead} byte(s)`);
+        if (numberOfBytesRead === buf.length) {
+          console.log(`createReadableStream("${fileName}") - Full chunk`);
+          controller.enqueue(buf);
+        } else {
+          console.log(`createReadableStream("${fileName}") - Partial chunk`);
+          const bufResized = new Uint8Array(buf, 0, numberOfBytesRead);
+          controller.enqueue(bufResized);
+        }
       }
+      file.close();
     },
   });
   return body;
@@ -90,10 +104,21 @@ async function handleRequest(request: Request): Promise<Response> {
   } else if (pathname.startsWith("/dnf4life.")) {
     //console.debug(`${pathname}`);
 
-    // Note: reading entire into memory fails on Deno Deploy due to 512MB max memory is available!
+    // Note 1: reading entire into memory fails on Deno Deploy due to 512MB max memory is available!
     // https://docs.deno.com/subhosting/manual/pricing_and_limits/#:~:text=512MB%20max%20memory%20is%20available.
-    //const file = await Deno.readFile("."+ pathname);
-    return new Response(await createReadableStream("."+ pathname), {
+    //
+    // Note 2: Godot 4.3 or later required for streaming?
+    // [HTML5] Replace XMLHttpRequest(s) with Fetch. #46728
+    // https://github.com/godotengine/godot/pull/46728/commits/fd7697718311338fa1d546ded4f8dc4a8a9ae8eb
+    let body: any = await Deno.readFile("."+ pathname);
+    /*
+    if (pathname.endsWith(".wasm") || pathname.endsWith(".pck")) {
+      body = await createReadableStream("."+ pathname);
+    } else {
+      body = await Deno.readFile("."+ pathname);
+    }
+    */
+    return new Response(body, {
       headers: {
         "Cache-Control": "public, max-age=31536000",
       },
