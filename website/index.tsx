@@ -93,7 +93,7 @@ async function handleRequest(request: Request): Promise<Response> {
     // Note: reading entire into memory fails on Deno Deploy due to 512MB max memory is available!
     // https://docs.deno.com/subhosting/manual/pricing_and_limits/#:~:text=512MB%20max%20memory%20is%20available.
     //const file = await Deno.readFile("."+ pathname);
-    return new Response(createReadableStream("."+ pathname), {
+    return new Response(await createReadableStream("."+ pathname), {
       headers: {
         "Cache-Control": "public, max-age=31536000",
       },
