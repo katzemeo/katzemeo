@@ -1,7 +1,5 @@
-import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.128.0/path/mod.ts";
-import { parse as parseCSV } from "https://deno.land/std@0.128.0/encoding/csv.ts";
-import { StringReader } from "https://deno.land/std@0.128.0/io/readers.ts";
-import { BufReader } from "https://deno.land/std@0.128.0/io/bufio.ts";
+import { normalize, isAbsolute, join, basename } from "https://deno.land/std@0.221.0/path/mod.ts";
+import { parse as parseCSV } from "https://deno.land/std@0.221.0/csv/mod.ts";
 import { standardDeviation as stddev, mean, extent } from "https://unpkg.com/simple-statistics@7.7.5/index.js?module";
 
 const CUR = new Intl.NumberFormat("en-US", { currency: "USD", style: "currency" }).format;
@@ -20,8 +18,7 @@ export function parseDate(date: any) {
 }
 
 const parseCSVText = async (text: string) => {
-  const bufReader = new BufReader(new StringReader(text));
-  let json: Array<any> = await parseCSV(bufReader, {
+  let json: Array<any> = await parseCSV(text, {
     skipFirstRow: true
   });
   return json;
@@ -30,7 +27,6 @@ const parseCSVText = async (text: string) => {
 const parseCSVFile = async (csvFile: string) => {
   try {
     const text = await Deno.readTextFile(csvFile);
-    //console.log(text);
     return await parseCSVText(text);
   } catch (e) {
     if (e instanceof Deno.errors.NotFound) {
@@ -92,7 +88,10 @@ const DESC_1_REGEX = [
   { pattern: `CASH WITHDRAWAL`, categorize: true },
   { pattern: `DEPOSIT INTEREST`, categorize: true },
   { pattern: `DEPOSIT`, categorize: true },
-  { pattern: `Email Trfs`, categorize: true },
+
+  { pattern: `Email Trfs`, categorize: true, credit: false }, // E-TRANSFER SENT
+  { pattern: `Email Trfs`, categorize: true, credit: true }, // E-TRANSFER RECEIVED
+
   { pattern: `INSURANCE`, credit: false, categorize: true },
   { pattern: `INSURANCE`, credit: true, categorize: true },
   { pattern: `INVESTMENT`, categorize: false },
