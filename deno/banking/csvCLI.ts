@@ -1,4 +1,4 @@
-import { parse as parseArgs } from "https://deno.land/std@0.128.0/flags/mod.ts"
+import { parse as parseArgs } from "@std/flags";
 import { parseDate, checkFiles, categorizeFiles } from "./csvCategorize.ts"
 
 function checkUsage(args: any) {

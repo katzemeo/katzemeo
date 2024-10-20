@@ -1,5 +1,4 @@
-import { parse as parseArgs } from "https://deno.land/std@0.128.0/flags/mod.ts"
-import { serve } from "https://deno.land/std@0.128.0/http/server.ts";
+import { parse as parseArgs } from "jsr:@std/flags"
 import { h, renderSSR, Helmet } from "https://deno.land/x/nano_jsx@v0.1.0/mod.ts";
 import { open } from "https://deno.land/x/open/index.ts";
 import { Grid } from "./Grid.tsx";
@@ -155,13 +154,12 @@ Usage:
     });
 
     const port = Number(args.port ?? Deno.env.get("PORT") ?? 7777);
-    console.log(`Listening on http://localhost:${port}`);
 
     if (args.open) {
       open(`http://localhost:${port}`);
     }
 
-    await serve(handleRequest, { port });
+    await Deno.serve({ port }, handleRequest);
 
   } catch (err) {
     if (args.debug) {
