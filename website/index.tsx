@@ -1,4 +1,5 @@
 import { h, renderSSR, Helmet } from 'nano-jsx'
+import { open } from "https://deno.land/x/open@v1.0.0/index.ts";
 //import { Router, Application } from 'oak'
 
 import { Hello } from './components/Hello.tsx'
@@ -49,18 +50,18 @@ const html = `
 
 // TODO - rewrite to use more efficicient byobRequest for byte streams
 // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_byte_streams
-async function createReadableStream(fileName) {
+async function createReadableStream(fileName: string) {
   console.log(`createReadableStream("${fileName}")...`);
   const body = new ReadableStream({
     //type: "bytes",
     async start(controller) {
-      let numberOfBytesRead = 0;
+      let numberOfBytesRead : number|null = 0;
       const file = await Deno.open(fileName, {read: true});
       const readBlockSize=100000;
       while (true) {
-        await Deno.seek(file.rid, numberOfBytesRead, Deno.SeekMode.Current)
+        await file.seek(numberOfBytesRead, Deno.SeekMode.Current)
         const buf = new Uint8Array(readBlockSize);
-        numberOfBytesRead = await Deno.read(file.rid, buf);
+        numberOfBytesRead = await file.read(buf);
         if (!numberOfBytesRead) {
           console.log(`createReadableStream("${fileName}") EOF!`);
           controller.close();
@@ -140,5 +141,9 @@ async function handleRequest(request: Request): Promise<Response> {
   }
 }
 
-const PORT = Number(Deno.env.get("PORT") ?? 8000);
+// Automatically open browser on localhost if "special" PORT is specified (requires allow-run)
+const PORT = Number(Deno.env.get("PORT") ?? 80);
+if (PORT === 80) {
+  open(`http://localhost:${PORT}/dnf4life.html`);
+}
 Deno.serve({ port: PORT }, handleRequest);

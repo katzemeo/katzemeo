@@ -1,7 +1,7 @@
 import { h, Component } from '../nano.ts'
 
 export class Comments extends Component {
-  render() {
+  override render() {
     return (
       <ul>
         {this.props.comments.map((comment: any) => {
