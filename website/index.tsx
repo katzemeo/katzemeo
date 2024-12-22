@@ -1,5 +1,5 @@
-import { h, renderSSR, Helmet } from './nano.ts'
-import { serve } from 'https://deno.land/std@0.116.0/http/server.ts'
+import { h, renderSSR, Helmet } from 'nano-jsx'
+//import { Router, Application } from 'oak'
 
 import { Hello } from './components/Hello.tsx'
 import { Comments } from './components/Comments.tsx'
@@ -140,7 +140,5 @@ async function handleRequest(request: Request): Promise<Response> {
   }
 }
 
-const PORT = Deno.env.get("PORT") ?? "8000";
-const addr = `:${PORT}`;
-console.log(`Listening on http://localhost${addr}`);
-await serve(handleRequest, { addr });
+const PORT = Number(Deno.env.get("PORT") ?? 8000);
+Deno.serve({ port: PORT }, handleRequest);
