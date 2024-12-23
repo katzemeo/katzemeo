@@ -142,8 +142,8 @@ async function handleRequest(request: Request): Promise<Response> {
 }
 
 // Automatically open browser on localhost if "special" PORT is specified (requires allow-run)
-const PORT = Number(Deno.env.get("PORT") ?? 80);
-if (PORT === 80) {
+const PORT = Number(Deno.env.get("PORT") ?? 8080);
+if (PORT === 8080) {
   open(`http://localhost:${PORT}/dnf4life.html`);
 }
 Deno.serve({ port: PORT }, handleRequest);
